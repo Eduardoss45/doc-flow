@@ -7,7 +7,7 @@ api/
 │  │  ├─ __init__.py
 │  │  ├─ main.py              # bootstrap da aplicação
 │  │
-│  │  ├─ api/                 # camada HTTP (controllers)
+│  │  ├─ http/                 # camada HTTP (controllers)
 │  │  │  ├─ __init__.py
 │  │  │  ├─ documents/
 │  │  │  │  ├─ __init__.py
