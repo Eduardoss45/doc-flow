@@ -1,8 +1,9 @@
 from celery import shared_task
 from pathlib import Path
 import importlib
+from uuid import UUID
 
-from src.infrastructure.db.db import SessionLocal
+from infrastructure.db.db import SessionLocal
 from src.repositories.document_repository import DocumentRepository
 from src.domain.enums.conversion_type import ConversionType
 from src.domain.entities.document_job import DocumentJob
@@ -24,16 +25,24 @@ def process_conversion(job_id: str):
     db = SessionLocal()
     repo = DocumentRepository(db)
 
+    job = None
+    input_path = None
+    output_path = None
+
     try:
-        job: DocumentJob = repo.get_by_id(job_id)
+        job_uuid = UUID(job_id)
+        job = repo.get_by_id(job_uuid)
         if not job:
             return
 
         job.mark_processing()
-        repo.update(job)
+        repo.update(job)          
 
         input_path = Path(job.input_path)
-        output_path = Path(job.output_path)
+        output_path = Path(job.output_path) if job.output_path else None
+
+        if not output_path:
+            raise ValueError("output_path não definido no job")
 
         module_name, func_name = CONVERTERS[
             ConversionType(job.conversion_type)
@@ -49,14 +58,22 @@ def process_conversion(job_id: str):
         convert_func(str(input_path), str(output_path))
 
         job.mark_completed(str(output_path))
+        repo.update(job)          
 
     except Exception as e:
-        job.mark_failed(str(e))
-        if output_path and output_path.exists():
-            output_path.unlink()
+        db.rollback() 
+
+        if job is not None:
+            job.mark_failed(str(e))
+            repo.update(job)      
+            db.commit()
+
+        if output_path is not None and output_path.exists():
+            output_path.unlink(missing_ok=True)
+
+        print(f"Erro processando job {job_id}: {str(e)}") 
 
     finally:
-        repo.update(job)
-        if input_path.exists():
+        if input_path is not None and input_path.exists():
             input_path.unlink(missing_ok=True)
         db.close()

@@ -1,5 +1,5 @@
 from flask import Flask, g
-from src.infrastructure.db.db import SessionLocal, engine, Base
+from infrastructure.db.db import SessionLocal, engine, Base
 from src.repositories.document_repository import DocumentRepository
 from src.services.document_service import DocumentService
 from src.http.health.routes import health_bp
@@ -15,7 +15,7 @@ celery = Celery(
     "document_processor",
     broker=os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672"),
     backend=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-    include=["src.workers.conversion_worker","src.workers.cleanup_old_files"],
+    include=["src.workers.conversion_worker", "src.workers.cleanup_old_files"],
 )
 
 celery.conf.update(
@@ -36,7 +36,7 @@ celery.conf.beat_schedule = {
 def create_app() -> Flask:
     app = Flask(__name__)
     Base.metadata.create_all(bind=engine)
-    
+
     @app.before_request
     def create_db_session():
         g.db = SessionLocal()

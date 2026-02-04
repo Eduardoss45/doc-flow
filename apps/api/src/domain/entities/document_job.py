@@ -15,7 +15,9 @@ class DocumentJob:
     error_message: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    expires_at: datetime | None = None
+    expires_at: datetime = field(
+        default_factory=lambda: datetime.utcnow() + timedelta(hours=2)
+    )
     id: UUID = field(default_factory=uuid4)
 
     def mark_processing(self) -> None:

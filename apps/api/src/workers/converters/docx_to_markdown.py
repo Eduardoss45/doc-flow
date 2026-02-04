@@ -1,8 +1,17 @@
 from markitdown import MarkItDown
 
+
 def convert(input_path: str, output_path: str) -> None:
     md = MarkItDown()
-    markdown_content = md.convert(input_path)
+    result = md.convert(input_path)
+    print("PASSOU")
 
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(markdown_content)
+    # Opção recomendada (oficial):
+    content = result.text_content
+
+    # Alternativas (descomente uma se a primeira falhar):
+    # content = result.markdown                  # se existir
+    # content = str(result)                      # fallback (muito comum)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(content)

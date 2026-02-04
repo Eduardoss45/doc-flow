@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from src.domain.entities.document_job import DocumentJob
-from src.infrastructure.models.document_job_model import DocumentJobModel
+from infrastructure.models.document_job_model import DocumentJobModel
 
 
 class DocumentRepository:
@@ -27,14 +27,39 @@ class DocumentRepository:
 
         self.db.add(model)
         self.db.commit()
+        self.db.refresh(model)
 
-    def get_by_id(self, job_id: UUID) -> DocumentJob | None:
+    def update(self, job: DocumentJob) -> None:
         model = (
-            self.db
-            .query(DocumentJobModel)
-            .filter_by(id=job_id)
+            self.db.query(DocumentJobModel)
+            .filter(DocumentJobModel.id == job.id)
             .first()
         )
+
+        if not model:
+            raise ValueError(f"Job {job.id} não encontrado para atualização")
+
+        model.conversion_type = job.conversion_type
+        model.input_filename = job.input_filename
+        model.input_path = job.input_path
+        model.output_path = job.output_path
+        model.status = job.status
+        model.error_message = job.error_message
+        model.created_at = job.created_at
+        model.updated_at = job.updated_at
+        model.expires_at = job.expires_at
+
+        self.db.commit()
+        self.db.refresh(model)
+
+    def get_by_id(self, job_id: str | UUID) -> DocumentJob | None:
+        if isinstance(job_id, str):
+            try:
+                job_id = UUID(job_id)
+            except ValueError:
+                return None
+
+        model = self.db.query(DocumentJobModel).filter_by(id=job_id).first()
 
         if not model:
             return None
@@ -43,8 +68,7 @@ class DocumentRepository:
 
     def get_expired_jobs(self) -> list[DocumentJob]:
         models = (
-            self.db
-            .query(DocumentJobModel)
+            self.db.query(DocumentJobModel)
             .filter(DocumentJobModel.expires_at < datetime.utcnow())
             .all()
         )
@@ -65,4 +89,6 @@ class DocumentRepository:
             expires_at=model.expires_at,
         )
 
-
+    def delete(self, job_id: UUID) -> None:
+        self.db.query(DocumentJobModel).filter(DocumentJobModel.id == job_id).delete()
+        self.db.commit()
