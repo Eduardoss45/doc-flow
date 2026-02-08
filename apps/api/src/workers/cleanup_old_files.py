@@ -2,7 +2,6 @@ from celery import shared_task
 from pathlib import Path
 from datetime import datetime, timedelta
 from uuid import UUID
-
 from infrastructure.db.db import SessionLocal
 from src.repositories.document_repository import DocumentRepository
 from infrastructure.models.document_job_model import DocumentJobModel

@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 from pathlib import Path
 from flask import g
-
 from src.domain.enums.conversion_type import ConversionType
 from src.services.document_service import DocumentService
 

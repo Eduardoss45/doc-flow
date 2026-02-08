@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from pathlib import Path
-
 from src.domain.enums import JobStatus, ConversionType
+
 
 @dataclass
 class DocumentJob:
@@ -35,6 +35,7 @@ class DocumentJob:
         self.error_message = error_message
         self.expires_at = datetime.utcnow() + timedelta(minutes=10)
         self.updated_at = datetime.utcnow()
+
 
 @property
 def is_expired(self) -> bool:

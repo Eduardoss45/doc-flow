@@ -4,7 +4,6 @@ from markitdown import MarkItDown
 def convert(input_path: str, output_path: str) -> None:
     md = MarkItDown()
     result = md.convert(input_path)
-    print("PASSOU")
 
     content = result.text_content
 
