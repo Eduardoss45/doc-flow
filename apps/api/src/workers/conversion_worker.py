@@ -4,8 +4,15 @@ import importlib
 from uuid import UUID
 from infrastructure.db.db import SessionLocal
 from src.repositories.document_repository import DocumentRepository
+from src.repositories.client_storage_repository import ClientStorageRepository
 from src.domain.enums.conversion_type import ConversionType
 from src.domain.entities.document_job import DocumentJob
+from src.infrastructure.storage.utils import (
+    get_client_input_dir,
+    get_client_output_dir,
+    get_directory_size,
+)
+from src.notifications.redis_pub import publish_job_event
 
 
 CONVERTERS = {
@@ -20,22 +27,19 @@ CONVERTERS = {
 
 
 @shared_task(name="process_conversion")
-def process_conversion(job_id: str):
+def process_conversion(job_id: str, client_id: str):
     db = SessionLocal()
-    repo = DocumentRepository(db)
-
-    job = None
-    input_path = None
-    output_path = None
+    job_repo = DocumentRepository(db)
+    storage_repo = ClientStorageRepository(db)
 
     try:
         job_uuid = UUID(job_id)
-        job = repo.get_by_id(job_uuid)
+        job = job_repo.get_by_id(job_uuid)
         if not job:
             return
 
         job.mark_processing()
-        repo.update(job)
+        job_repo.update(job)
 
         input_path = Path(job.input_path)
         output_path = Path(job.output_path) if job.output_path else None
@@ -46,33 +50,62 @@ def process_conversion(job_id: str):
         module_name, func_name = CONVERTERS[ConversionType(job.conversion_type)].rsplit(
             ".", 1
         )
-
         converter_module = importlib.import_module(
             f"src.workers.converters.{module_name}"
         )
         convert_func = getattr(converter_module, func_name)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-
         convert_func(str(input_path), str(output_path))
 
         job.mark_completed(str(output_path))
-        repo.update(job)
+
+        publish_job_event(
+            "job_completed",
+            {
+                "job_id": str(job.id),
+                "status": job.status.value,
+                "download_url": f"/documents/download/{job.id}",
+                "filename": job.input_filename,
+                "client_id": client_id,
+            },
+        )
+
+        job_repo.update(job)
+
+        client_dir = get_client_output_dir(client_id)
+        new_size = get_directory_size(client_dir)
+        storage_repo.update_size(UUID(client_id), new_size)
 
     except Exception as e:
         db.rollback()
 
-        if job is not None:
+        if "job" in locals() and job is not None:
             job.mark_failed(str(e))
-            repo.update(job)
+            job_repo.update(job)
             db.commit()
 
-        if output_path is not None and output_path.exists():
+            publish_job_event(
+                "job_failed",
+                {
+                    "job_id": str(job.id),
+                    "status": "failed",
+                    "error": str(e),
+                    "client_id": client_id,
+                },
+            )
+
+        if (
+            "output_path" in locals()
+            and output_path is not None
+            and output_path.exists()
+        ):
             output_path.unlink(missing_ok=True)
 
-        print(f"Erro processando job {job_id}: {str(e)}")
+        if "client_id" in locals() and client_id:
+            client_dir = get_client_output_dir(client_id)
+            new_size = get_directory_size(client_dir)
+            storage_repo.update_size(UUID(client_id), new_size)
 
     finally:
-        if input_path is not None and input_path.exists():
-            input_path.unlink(missing_ok=True)
         db.close()

@@ -7,6 +7,18 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth_bp.route("/client-id", methods=["POST"])
 def generate_client_id():
+    existing_client_id = request.cookies.get("client_id")
+    if existing_client_id and existing_client_id.strip():
+        return (
+            jsonify(
+                {
+                    "status": "client_id existente",
+                    "client_id": existing_client_id,
+                }
+            ),
+            200,
+        )
+
     client_id = str(uuid4())
 
     expires = datetime.now(timezone.utc) + timedelta(hours=24)

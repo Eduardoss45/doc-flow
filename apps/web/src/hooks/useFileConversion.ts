@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useApi } from '@/hook/config/api';
+import { convertFile } from '@/services/conversion';
+import { toast } from 'sonner';
 
 export type ConversionType =
   | 'csv_to_json'
@@ -32,8 +33,6 @@ const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
 const FALLBACK: ConversionType[] = [];
 
 export function useFileConversion() {
-  const { postForm } = useApi();
-
   const [file, setFile] = useState<File | null>(null);
   const [conversionType, setConversionType] = useState<ConversionType>('csv_to_json');
   const [loading, setLoading] = useState(false);
@@ -42,8 +41,7 @@ export function useFileConversion() {
 
   const fileExtension = useMemo(() => {
     if (!file?.name) return null;
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    return ext || null;
+    return file.name.split('.').pop()?.toLowerCase() ?? null;
   }, [file]);
 
   const availableConversions = useMemo<ConversionType[]>(() => {
@@ -56,7 +54,7 @@ export function useFileConversion() {
     setError(null);
 
     if (availableConversions.length === 0) {
-      setConversionType('csv_to_json' as any);
+      setConversionType('csv_to_json' as ConversionType);
     } else if (!availableConversions.includes(conversionType)) {
       setConversionType(availableConversions[0]);
     }
@@ -64,9 +62,7 @@ export function useFileConversion() {
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
-    if (!selected) return;
-
-    setFile(selected);
+    if (selected) setFile(selected);
   }, []);
 
   const convert = useCallback(async () => {
@@ -74,6 +70,7 @@ export function useFileConversion() {
       setError('Selecione um arquivo primeiro');
       return;
     }
+
     if (!availableConversions.includes(conversionType)) {
       setError('Conversão não suportada para este tipo de arquivo');
       return;
@@ -83,20 +80,16 @@ export function useFileConversion() {
     setError(null);
     setResultUrl(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('conversionType', conversionType);
+    const response = await convertFile(file, conversionType);
 
-    const response = await postForm<{ downloadUrl: string }>('/convert', formData);
-
-    if (response.success && response.data?.downloadUrl) {
-      setResultUrl(response.data.downloadUrl);
+    if (response.success && response.jobId) {
+      toast.success('Processamento iniciado! Aguarde o resultado.');
     } else {
-      setError(response.error || 'Falha na conversão');
+      setError(response.error ?? 'Falha na conversão');
     }
 
     setLoading(false);
-  }, [file, conversionType, availableConversions, postForm]);
+  }, [file, conversionType, availableConversions]);
 
   return {
     file,

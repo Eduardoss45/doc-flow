@@ -1,20 +1,29 @@
-from src.repositories.document_repository import DocumentRepository
-from infrastructure.db.db import SessionLocal, engine, Base
-from src.services.document_service import DocumentService
-from src.http.documents.routes import documents_bp
-from flask_limiter.util import get_remote_address
-from src.http.health.routes import health_bp
-from flask import Flask, g, request, jsonify
-from celery.schedules import crontab
-from flask_limiter import Limiter
+import eventlet
+
+eventlet.monkey_patch(all=True, thread=True, socket=True)
+
 from dotenv import load_dotenv
-from flask_cors import CORS
-from celery import Celery
-from pathlib import Path
 import os
 
-
 load_dotenv()
+
+from flask import Flask, g, request, jsonify
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from celery import Celery
+from celery.schedules import crontab
+from pathlib import Path
+from uuid import UUID
+from src.app.socket_manager import socketio, init_socketio
+from src.repositories.document_repository import DocumentRepository
+from src.repositories.client_storage_repository import ClientStorageRepository
+from src.services.document_service import DocumentService
+from src.http.documents.routes import documents_bp
+from src.http.auth.routes import auth_bp
+from src.http.health.routes import health_bp
+from infrastructure.db.db import SessionLocal, engine, Base
+
 
 celery = Celery(
     "document_processor",
@@ -65,6 +74,8 @@ def create_app() -> Flask:
         retry_after=True,
     )
 
+    init_socketio(app)
+
     @app.errorhandler(429)
     def ratelimit_handler(e):
         return (
@@ -81,7 +92,10 @@ def create_app() -> Flask:
     def create_db_session():
         g.db = SessionLocal()
         g.document_repository = DocumentRepository(g.db)
-        g.document_service = DocumentService(g.document_repository)
+        g.storage_repository = ClientStorageRepository(g.db)
+        g.document_service = DocumentService(
+            g.document_repository, g.storage_repository
+        )
 
     @app.teardown_request
     def shutdown_db_session(exception=None):
@@ -92,6 +106,8 @@ def create_app() -> Flask:
     app.extensions = getattr(app, "extensions", {})
     app.extensions["celery"] = celery
     app.extensions["limiter"] = limiter
+    app.extensions["socketio"] = socketio
+
     register_blueprints(app)
     return app
 
@@ -99,13 +115,17 @@ def create_app() -> Flask:
 def register_blueprints(app: Flask) -> None:
     app.register_blueprint(health_bp)
     app.register_blueprint(documents_bp)
+    app.register_blueprint(auth_bp)
 
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(
+    socketio.run(
+        app,
         host=os.getenv("FLASK_HOST", "0.0.0.0"),
-        port=int(os.getenv("FLASK_PORT", 5000)),
+        port=int(os.getenv("FLASK_PORT", 4000)),
         debug=os.getenv("FLASK_DEBUG", "True").lower() == "true",
         use_reloader=True,
+        log_output=True,
+        allow_unsafe_werkzeug=True,
     )

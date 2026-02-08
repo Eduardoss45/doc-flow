@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useFileConversion, type ConversionType } from '@/hook/useFileConversion';
+
+import { useFileConversion, type ConversionType } from '@/hooks/useFileConversion';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -173,7 +174,7 @@ export default function FileConverter() {
           <div className="flex-1 p-5 overflow-y-auto">
             {/* Aviso de expiração */}
             <div className="flex items-start gap-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 p-4 mb-6 text-sm text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
-              <Clock className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <Clock className="h-5 w-5 mt-0.5 shrink-0" />
               <p>
                 Os arquivos convertidos ficam disponíveis por <strong>24 horas</strong>. Após esse
                 período, eles são removidos automaticamente.

@@ -1,10 +1,10 @@
-
 from sqlalchemy import Column, String, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from infrastructure.db.db import Base
 from src.domain.enums import JobStatus, ConversionType
 import uuid
 from datetime import datetime
+
 
 class DocumentJobModel(Base):
     __tablename__ = "document_jobs"

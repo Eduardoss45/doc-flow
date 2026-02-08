@@ -16,7 +16,7 @@ class DocumentJob:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     expires_at: datetime = field(
-        default_factory=lambda: datetime.utcnow() + timedelta(hours=2)
+        default_factory=lambda: datetime.utcnow() + timedelta(hours=24)
     )
     id: UUID = field(default_factory=uuid4)
 
@@ -27,7 +27,7 @@ class DocumentJob:
     def mark_completed(self, output_path: str) -> None:
         self.status = JobStatus.COMPLETED
         self.output_path = output_path
-        self.expires_at = datetime.utcnow() + timedelta(hours=1)
+        self.expires_at = datetime.utcnow() + timedelta(hours=24)
         self.updated_at = datetime.utcnow()
 
     def mark_failed(self, error_message: str) -> None:
