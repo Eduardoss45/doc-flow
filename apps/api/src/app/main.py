@@ -1,7 +1,3 @@
-import eventlet
-
-eventlet.monkey_patch(all=True, thread=True, socket=True)
-
 from dotenv import load_dotenv
 import os
 
@@ -125,7 +121,7 @@ if __name__ == "__main__":
         host=os.getenv("FLASK_HOST", "0.0.0.0"),
         port=int(os.getenv("FLASK_PORT", 4000)),
         debug=os.getenv("FLASK_DEBUG", "True").lower() == "true",
-        use_reloader=True,
+        use_reloader=False,
         log_output=True,
         allow_unsafe_werkzeug=True,
     )

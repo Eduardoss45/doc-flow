@@ -5,45 +5,56 @@ import os
 import redis
 import json
 import time
-from src.notifications.redis_pub import (
-    redis_client,
-    NOTIFICATION_CHANNEL,
-    init_redis_client,
-)
+import threading
+from src.notifications.redis_pub import NOTIFICATION_CHANNEL, init_redis_client
 
 
 socketio = SocketIO(
     cors_allowed_origins=os.getenv("ALLOWED_ORIGINS", "*"),
     manage_session=False,
+    async_mode="threading",
+    logger=True,
+    engineio_logger=True,
 )
 
 
+# Lock para proteger acesso ao redis_client em múltiplas threads
+redis_lock = threading.Lock()
+redis_client_local = None  # Vamos usar uma variável local por thread se necessário
+
+
+def get_redis_client():
+    """Garante que redis_client esteja inicializado na thread atual"""
+    global redis_client_local
+    if redis_client_local is None:
+        with redis_lock:
+            if redis_client_local is None:
+                print("[Redis] Inicializando cliente na thread atual...")
+                init_redis_client()  # chama a função original que seta o global
+                # Se sua init_redis_client seta um global chamado redis_client, pegamos ele
+                from src.notifications.redis_pub import redis_client as global_client
+
+                redis_client_local = global_client
+                if redis_client_local is None:
+                    raise RuntimeError("Falha ao inicializar redis_client")
+    return redis_client_local
+
+
 def init_socketio(app):
-    """
-    Inicializa SocketIO e Redis de forma síncrona.
-    Inicia o listener como background task do SocketIO (sem thread manual).
-    """
-
-    init_redis_client()
-
+    # Inicializa Redis na thread principal (garantia extra)
+    get_redis_client()  # força inicialização cedo
     socketio.init_app(app)
-
     socketio.start_background_task(target=start_redis_listener)
-
-    print(
-        "[Socket.IO] Inicialização completa. Listener Redis iniciado como background task."
-    )
+    print("[Socket.IO] Inicialização completa. Listener Redis iniciado.")
 
 
 def start_redis_listener():
-    """
-    Listener seguro usando start_background_task (ordem garantida).
-    """
-    print("[Socket.IO] Iniciando listener Redis para notificações de jobs...")
+    print("[Socket.IO] Iniciando listener Redis em thread separada...")
 
     while True:
         try:
-            pubsub = redis_client.pubsub()
+            client = get_redis_client()  # sempre pega o cliente atualizado
+            pubsub = client.pubsub()
             pubsub.subscribe(NOTIFICATION_CHANNEL)
             print("[Socket.IO] Conectado ao canal Redis com sucesso")
 
@@ -60,28 +71,20 @@ def start_redis_listener():
 
                         if event_type == "job_completed":
                             socketio.emit("job_completed", data, room=client_id)
-                            print(
-                                f"[Socket.IO] Emitido job_completed para client {client_id}"
-                            )
+                            print(f"[Socket.IO] Emitido job_completed para {client_id}")
                         elif event_type == "job_failed":
                             socketio.emit("job_failed", data, room=client_id)
-                            print(
-                                f"[Socket.IO] Emitido job_failed para client {client_id}"
-                            )
+                            print(f"[Socket.IO] Emitido job_failed para {client_id}")
                         elif event_type == "job_progress":
                             socketio.emit("job_progress", data, room=client_id)
-                            print(
-                                f"[Socket.IO] Emitido job_progress para client {client_id}"
-                            )
+                            print(f"[Socket.IO] Emitido job_progress para {client_id}")
                     except json.JSONDecodeError:
-                        print(f"[Socket.IO] JSON inválido recebido: {message['data']}")
+                        print(f"[Socket.IO] JSON inválido: {message['data']}")
                     except Exception as e:
-                        print(f"[Socket.IO] Erro ao processar mensagem Redis: {e}")
+                        print(f"[Socket.IO] Erro ao processar mensagem: {e}")
 
         except redis.exceptions.ConnectionError as e:
-            print(
-                f"[Socket.IO] Falha na conexão Redis: {e}. Tentando reconectar em 5s..."
-            )
+            print(f"[Socket.IO] Falha na conexão Redis: {e}. Reconectando em 5s...")
             time.sleep(5)
         except Exception as e:
             print(f"[Socket.IO] Erro crítico no listener: {e}. Reiniciando em 10s...")
