@@ -33,10 +33,6 @@ export function useSocket() {
       toast.success(`Conversão concluída! Job ${data.job_id}`, {
         duration: 10000,
         description: data.filename ? `Arquivo: ${data.filename}` : undefined,
-        action: {
-          label: 'Baixar',
-          onClick: () => window.open(data.download_url, '_blank'),
-        },
       });
     });
 

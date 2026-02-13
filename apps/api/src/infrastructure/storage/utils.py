@@ -2,14 +2,21 @@ from pathlib import Path
 from uuid import UUID
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
 def get_client_input_dir(client_id: str | UUID) -> Path:
     cid = str(client_id)
-    return Path("src/infrastructure/storage/input") / cid
+    dir_path = PROJECT_ROOT / "src" / "infrastructure" / "storage" / "input" / cid
+    dir_path.mkdir(parents=True, exist_ok=True)
+    return dir_path
 
 
 def get_client_output_dir(client_id: str | UUID) -> Path:
     cid = str(client_id)
-    return Path("src/infrastructure/storage/output") / cid
+    dir_path = PROJECT_ROOT / "src" / "infrastructure" / "storage" / "output" / cid
+    dir_path.mkdir(parents=True, exist_ok=True)
+    return dir_path
 
 
 def get_directory_size(directory: Path) -> int:

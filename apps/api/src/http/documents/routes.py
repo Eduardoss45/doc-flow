@@ -1,11 +1,23 @@
-from flask import Blueprint, request, jsonify
-from werkzeug.utils import secure_filename
-from pathlib import Path
-from flask import g
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    send_from_directory,
+    abort,
+    current_app,
+    g,
+)
+from infrastructure.storage.utils import get_client_output_dir, get_client_input_dir
+from src.repositories.client_storage_repository import ClientStorageRepository
 from src.domain.enums.conversion_type import ConversionType
 from src.services.document_service import DocumentService
-from src.repositories.client_storage_repository import ClientStorageRepository
+from werkzeug.utils import secure_filename
+from typing import List, Dict
+from datetime import datetime, timezone
+from pathlib import Path
 from uuid import UUID
+import os
+
 
 documents_bp = Blueprint("documents", __name__, url_prefix="/documents")
 
@@ -88,4 +100,95 @@ def upload_and_convert():
             }
         ),
         202,
+    )
+
+
+@documents_bp.route("/files", methods=["GET"])
+@documents_bp.route("/history", methods=["GET"])
+def list_user_files():
+    client_id_str = request.cookies.get("client_id")
+    if not client_id_str or not client_id_str.strip():
+        return jsonify({"error": "client_id cookie is required"}), 400
+
+    try:
+        client_id = UUID(client_id_str)
+    except ValueError:
+        return jsonify({"error": "client_id inválido"}), 400
+
+    storage_repo = ClientStorageRepository(g.db)
+    storage = storage_repo.get_by_client_id(client_id)
+    if not storage:
+        return jsonify({"error": "Cliente não encontrado"}), 404
+
+    output_dir: Path = get_client_output_dir(client_id)
+
+    files_list: List[Dict] = []
+
+    if output_dir.is_dir():
+        for entry in output_dir.iterdir():
+            if not entry.is_file():
+                continue
+
+            try:
+                stat = entry.stat()
+            except OSError:
+                continue
+
+            filename = entry.name
+            download_url = f"{request.host_url.rstrip('/')}/documents/download/output/{client_id}/{filename}"
+
+            files_list.append(
+                {
+                    "filename": filename,
+                    "size_bytes": stat.st_size,
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "modified_at": datetime.fromtimestamp(
+                        stat.st_mtime, tz=timezone.utc
+                    ).isoformat(),
+                    "download_url": download_url,
+                    "extension": entry.suffix.lstrip(".").upper() or None,
+                }
+            )
+
+    files_list.sort(key=lambda x: x["modified_at"], reverse=True)
+
+    return jsonify(
+        {
+            "client_id": str(client_id),
+            "count": len(files_list),
+            "files": files_list,
+            "has_more": False,
+        }
+    )
+
+
+@documents_bp.route(
+    "/download/output/<uuid:client_id>/<path:filename>", methods=["GET"]
+)
+def download_converted_file(client_id: UUID, filename: str):
+    cookie_client_id = request.cookies.get("client_id")
+    if not cookie_client_id or cookie_client_id != str(client_id):
+        abort(403, "Acesso negado: client_id não corresponde")
+
+    output_dir: Path = get_client_output_dir(client_id)
+
+    current_app.logger.info(f"Download solicitado: client={client_id}, file={filename}")
+    current_app.logger.info(f"Output dir: {output_dir} (existe? {output_dir.exists()})")
+    if output_dir.exists():
+        files = [f.name for f in output_dir.iterdir() if f.is_file()]
+        current_app.logger.info(f"Arquivos no diretório: {files}")
+
+    safe_filename = secure_filename(filename)
+    file_path = output_dir / safe_filename
+
+    if not file_path.is_file():
+        current_app.logger.error(f"Arquivo não encontrado: {file_path}")
+        abort(404, "Arquivo não encontrado ou já expirado/deletado")
+
+    return send_from_directory(
+        str(output_dir),
+        safe_filename,
+        as_attachment=True,
+        download_name=filename,
+        max_age=0,
     )

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { convertFile } from '@/services/conversion';
 import { toast } from 'sonner';
+import { api } from '@/infra/api';
 
 export type ConversionType =
   | 'csv_to_json'
@@ -32,12 +33,24 @@ const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
 
 const FALLBACK: ConversionType[] = [];
 
+export type ProcessedFile = {
+  filename: string;
+  extension: string | null;
+  size_bytes: number;
+  size_mb: number;
+  modified_at: string;
+  download_url: string;
+};
+
 export function useFileConversion() {
   const [file, setFile] = useState<File | null>(null);
   const [conversionType, setConversionType] = useState<ConversionType>('csv_to_json');
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const fileExtension = useMemo(() => {
     if (!file?.name) return null;
@@ -48,6 +61,33 @@ export function useFileConversion() {
     if (!fileExtension) return FALLBACK;
     return CONVERSIONS_BY_INPUT[fileExtension] || FALLBACK;
   }, [fileExtension]);
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const res = await api.get('/documents/files')
+      if (res.data?.files && Array.isArray(res.data.files)) {
+        setProcessedFiles(res.data.files);
+      } else {
+        setProcessedFiles([]);
+      }
+    } catch (err: any) {
+      console.error('Erro ao carregar histórico:', err);
+      setHistoryError('Não foi possível carregar o histórico de conversões');
+      setProcessedFiles([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+  useEffect(() => {
+    if (!loading && !error && processedFiles.length > 0) {
+     const timer = setTimeout(fetchHistory, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, error, processedFiles.length, fetchHistory]);
 
   useEffect(() => {
     setResultUrl(null);
@@ -84,7 +124,7 @@ export function useFileConversion() {
 
     if (response.success && response.jobId) {
       toast.success('Processamento iniciado! Aguarde o resultado.');
-    } else {
+  } else {
       setError(response.error ?? 'Falha na conversão');
     }
 
@@ -103,5 +143,9 @@ export function useFileConversion() {
     handleFileChange,
     convert,
     labels: CONVERSION_LABELS,
+    processedFiles,
+    historyLoading,
+    historyError,
+    refreshHistory: fetchHistory,
   };
 }
