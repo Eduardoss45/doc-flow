@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from src.domain.entities.document_job import DocumentJob
-from infrastructure.models.document_job_model import DocumentJobModel
+from infra.models.document_job_model import DocumentJobModel
 
 
 class DocumentRepository:

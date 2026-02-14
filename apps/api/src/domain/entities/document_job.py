@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from pathlib import Path
-from src.domain.enums import JobStatus, ConversionType
+from src.domain.enums.job_status import JobStatus
+from src.domain.enums.conversion_type import ConversionType
 
 
 @dataclass

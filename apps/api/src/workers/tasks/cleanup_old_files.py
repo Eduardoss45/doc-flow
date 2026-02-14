@@ -2,10 +2,10 @@ from celery import shared_task
 from pathlib import Path
 from datetime import datetime, timedelta
 from uuid import UUID
-from infrastructure.db.db import SessionLocal
+from infra.db.db import SessionLocal
 from src.repositories.client_storage_repository import ClientStorageRepository
-from infrastructure.models.client_storage_model import ClientStorageModel
-from src.infrastructure.storage.utils import get_client_input_dir, get_client_output_dir
+from infra.models.client_storage_model import ClientStorageModel
+from src.infra.storage.utils import get_client_input_dir, get_client_output_dir
 
 
 @shared_task

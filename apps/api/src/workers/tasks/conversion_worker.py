@@ -2,17 +2,17 @@ from celery import shared_task
 from pathlib import Path
 import importlib
 from uuid import UUID
-from infrastructure.db.db import SessionLocal
+from infra.db.db import SessionLocal
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.client_storage_repository import ClientStorageRepository
 from src.domain.enums.conversion_type import ConversionType
 from src.domain.entities.document_job import DocumentJob
-from src.infrastructure.storage.utils import (
+from src.infra.storage.utils import (
     get_client_input_dir,
     get_client_output_dir,
     get_directory_size,
 )
-from src.notifications.redis_pub import publish_job_event
+from src.infra.redis.redis_pub import publish_job_event
 
 
 CONVERTERS = {
@@ -59,7 +59,7 @@ def process_conversion(job_id: str, client_id: str):
         convert_func(str(input_path), str(output_path))
 
         job.mark_completed(str(output_path))
-
+        print("Passou")
         publish_job_event(
             "job_completed",
             {

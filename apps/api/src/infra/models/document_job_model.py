@@ -1,7 +1,8 @@
 from sqlalchemy import Column, String, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from infrastructure.db.db import Base
-from src.domain.enums import JobStatus, ConversionType
+from infra.db.db import Base
+from src.domain.enums.job_status import JobStatus
+from src.domain.enums.conversion_type import ConversionType
 import uuid
 from datetime import datetime
 

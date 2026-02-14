@@ -7,7 +7,7 @@ from flask import (
     current_app,
     g,
 )
-from infrastructure.storage.utils import get_client_output_dir, get_client_input_dir
+from infra.storage.utils import get_client_output_dir, get_client_input_dir
 from src.repositories.client_storage_repository import ClientStorageRepository
 from src.domain.enums.conversion_type import ConversionType
 from src.services.document_service import DocumentService
@@ -61,7 +61,7 @@ def upload_and_convert():
     storage_repo = ClientStorageRepository(g.db)
     storage = storage_repo.get_or_create(client_id)
 
-    input_dir = Path("src/infrastructure/storage/input")
+    input_dir = Path("src/infra/storage/input")
 
     approx_size = file.content_length or 0
     if approx_size == 0:
@@ -87,7 +87,7 @@ def upload_and_convert():
 
     service.job_repo.update(job)
 
-    from src.workers.conversion_worker import process_conversion
+    from src.workers.tasks.conversion_worker import process_conversion
 
     process_conversion.delay(str(job.id), str(client_id))
 

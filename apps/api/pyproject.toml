@@ -30,4 +30,5 @@ packages = [{include = "app", from = "src"}]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
-start = "app.cli:start"
+start-api   = "src.entrypoints.api:main"
+start-worker = "src.entrypoints.worker:main"

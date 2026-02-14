@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from infrastructure.db.db import Base
+from infra.db.db import Base
 import uuid
 from datetime import datetime
 

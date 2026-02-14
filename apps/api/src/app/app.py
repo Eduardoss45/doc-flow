@@ -17,8 +17,7 @@ from src.repositories.client_storage_repository import ClientStorageRepository
 from src.services.document_service import DocumentService
 from src.http.documents.routes import documents_bp
 from src.http.auth.routes import auth_bp
-from src.http.health.routes import health_bp
-from infrastructure.db.db import SessionLocal, engine, Base
+from infra.db.db import SessionLocal, engine, Base
 
 
 celery = Celery(
@@ -109,7 +108,6 @@ def create_app() -> Flask:
 
 
 def register_blueprints(app: Flask) -> None:
-    app.register_blueprint(health_bp)
     app.register_blueprint(documents_bp)
     app.register_blueprint(auth_bp)
 

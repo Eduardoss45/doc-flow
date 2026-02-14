@@ -1,10 +1,10 @@
 from uuid import UUID
 from pathlib import Path
-from src.domain.entities import DocumentJob
-from src.domain.enums import ConversionType
+from src.domain.entities.document_job import DocumentJob
+from src.domain.enums.conversion_type import ConversionType
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.client_storage_repository import ClientStorageRepository
-from src.infrastructure.storage.utils import get_client_input_dir, get_client_output_dir
+from src.infra.storage.utils import get_client_input_dir, get_client_output_dir
 
 
 class DocumentService:

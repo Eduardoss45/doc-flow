@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from datetime import datetime, timezone
 from src.domain.entities.client_storage import ClientStorage
-from infrastructure.models.client_storage_model import ClientStorageModel
-from src.infrastructure.storage.utils import get_directory_size, get_client_output_dir
+from infra.models.client_storage_model import ClientStorageModel
+from src.infra.storage.utils import get_directory_size, get_client_output_dir
 
 
 class ClientStorageRepository:
