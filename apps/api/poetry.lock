@@ -31,6 +31,42 @@ files = [
 dev = ["black", "coverage", "isort", "pre-commit", "pyenchant", "pylint"]
 
 [[package]]
+name = "apispec"
+version = "6.9.0"
+description = "A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification)."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "apispec-6.9.0-py3-none-any.whl", hash = "sha256:4c275f0a6dac0bcfcceee00b451a16b650f9184a57c624b0b6d12d82b8d15a61"},
+    {file = "apispec-6.9.0.tar.gz", hash = "sha256:7a38ce7c3eedc7771e6e33295afdd8c4b0acdd9865b483f8cf6cc369c93e8d1e"},
+]
+
+[package.dependencies]
+marshmallow = {version = ">=3.18.0", optional = true, markers = "extra == \"marshmallow\""}
+packaging = ">=21.3"
+
+[package.extras]
+dev = ["apispec[tests]", "pre-commit (>=3.5,<5.0)", "tox"]
+docs = ["apispec[marshmallow]", "pyyaml (==6.0.3)", "sphinx (==8.2.3)", "sphinx-issues (==5.0.1)", "sphinx-rtd-theme (==3.0.2)"]
+marshmallow = ["marshmallow (>=3.18.0)"]
+tests = ["apispec[marshmallow,yaml]", "openapi-spec-validator (==0.7.2)", "pytest"]
+yaml = ["PyYAML (>=3.10)"]
+
+[[package]]
+name = "async-timeout"
+version = "5.0.1"
+description = "Timeout context manager for asyncio programs"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "python_version == \"3.11\" and python_full_version < \"3.11.3\""
+files = [
+    {file = "async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c"},
+    {file = "async_timeout-5.0.1.tar.gz", hash = "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"},
+]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 description = "Classes Without Boilerplate"
@@ -710,6 +746,30 @@ doc = ["Sphinx (==5.3.0)", "alabaster (==0.7.12)", "sphinx-issues (==3.0.1)"]
 test = ["Faker (==2.0.0)", "backports.zoneinfo ; python_version < \"3.9\"", "blinker", "invoke (==2.2.0)", "mock (==3.0.5)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==4.0.0)", "pytest-flask (==1.3.0)", "pytest-mock (==3.6.1)", "pytest-profiling (==1.7.0)", "setuptools", "twine (==3.8.0)"]
 
 [[package]]
+name = "flask-smorest"
+version = "0.46.2"
+description = "Flask/Marshmallow-based REST API framework"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "flask_smorest-0.46.2-py3-none-any.whl", hash = "sha256:caff5b95d575044f90854c70a218d4c05bc920e462fdca2c58c0dd48ce29946c"},
+    {file = "flask_smorest-0.46.2.tar.gz", hash = "sha256:7d9099a37a5add415670d6904ae032eefc1d2ba2432f060d7c048c74fc655a80"},
+]
+
+[package.dependencies]
+apispec = {version = ">=6.0.0,<7", extras = ["marshmallow"]}
+flask = ">=3.0.2,<4"
+marshmallow = ">=3.24.1,<5"
+webargs = ">=8.0.0,<9"
+werkzeug = ">=3.0.1,<4"
+
+[package.extras]
+dev = ["flask-smorest[tests]", "pre-commit (>=3.6,<5.0)", "tox"]
+docs = ["alabaster (==1.0.0)", "sphinx (==8.2.3)", "sphinx-issues (==5.0.1)"]
+tests = ["PyYAML (==6.0.2)", "apispec (==6.8.3)", "coverage (==7.10.6)", "flask[async] (==3.1.2)", "marshmallow", "packaging (>=24.2)", "pytest (==8.4.2)", "pytest-cov (==7.0.0)", "webargs (==8.7.0)", "werkzeug (==3.1.3)"]
+
+[[package]]
 name = "flask-socketio"
 version = "5.6.0"
 description = "Socket.IO integration for Flask applications"
@@ -1265,7 +1325,11 @@ files = [
 
 [package.dependencies]
 click = ">=8.1.7"
-numpy = {version = ">=2.1.0", markers = "python_version >= \"3.13\""}
+numpy = [
+    {version = ">=1.24", markers = "python_version < \"3.12\""},
+    {version = ">=1.26", markers = "python_version == \"3.12\""},
+    {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
+]
 onnxruntime = [
     {version = ">=1.17.0,<=1.20.1", markers = "sys_platform == \"win32\" and python_version > \"3.9\""},
     {version = ">=1.17.0", markers = "python_version > \"3.9\" and sys_platform != \"win32\""},
@@ -1436,6 +1500,23 @@ files = [
     {file = "markupsafe-3.0.3-cp39-cp39-win_arm64.whl", hash = "sha256:38664109c14ffc9e7437e86b4dceb442b0096dfe3541d7864d9cbe1da4cf36c8"},
     {file = "markupsafe-3.0.3.tar.gz", hash = "sha256:722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698"},
 ]
+
+[[package]]
+name = "marshmallow"
+version = "4.2.2"
+description = "A lightweight library for converting complex datatypes to and from native Python datatypes."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "marshmallow-4.2.2-py3-none-any.whl", hash = "sha256:084a9466111b7ec7183ca3a65aed758739af919fedc5ebdab60fb39d6b4dc121"},
+    {file = "marshmallow-4.2.2.tar.gz", hash = "sha256:ba40340683a2d1c15103647994ff2f6bc2c8c80da01904cbe5d96ee4baa78d9f"},
+]
+
+[package.extras]
+dev = ["marshmallow[tests]", "pre-commit (>=3.5,<5.0)", "tox"]
+docs = ["autodocsumm (==0.2.14)", "furo (==2025.12.19)", "sphinx (==8.2.3)", "sphinx-copybutton (==0.5.2)", "sphinx-issues (==5.0.1)", "sphinxext-opengraph (==0.13.0)"]
+tests = ["pytest", "simplejson"]
 
 [[package]]
 name = "mpmath"
@@ -1904,6 +1985,7 @@ files = [
 
 [package.dependencies]
 psycopg-binary = {version = "3.3.2", optional = true, markers = "implementation_name != \"pypy\" and extra == \"binary\""}
+typing-extensions = {version = ">=4.6", markers = "python_version < \"3.13\""}
 tzdata = {version = "*", markers = "sys_platform == \"win32\""}
 
 [package.extras]
@@ -2126,6 +2208,9 @@ files = [
     {file = "redis-6.4.0.tar.gz", hash = "sha256:b01bc7282b8444e28ec36b261df5375183bb47a07eb9c603f284e89cbc5ef010"},
 ]
 
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
+
 [package.extras]
 hiredis = ["hiredis (>=3.2.0)"]
 jwt = ["pyjwt (>=2.9.0)"]
@@ -2146,6 +2231,7 @@ files = [
 [package.dependencies]
 attrs = ">=22.2.0"
 rpds-py = ">=0.7.0"
+typing-extensions = {version = ">=4.4.0", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "requests"
@@ -2538,6 +2624,28 @@ files = [
 ]
 
 [[package]]
+name = "webargs"
+version = "8.7.1"
+description = "Declarative parsing and validation of HTTP request objects, with built-in support for popular web frameworks, including Flask, Django, Bottle, Tornado, Pyramid, Falcon, and aiohttp."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "webargs-8.7.1-py3-none-any.whl", hash = "sha256:a184aed9d2509e6e14ab99ee3e9dc3a614c7070affe94cd4dfdb0d002e0a6e5f"},
+    {file = "webargs-8.7.1.tar.gz", hash = "sha256:799bf9039c76c23fd8dc1951107a75a9e561203c15d6ae8f89c1e46e234636c1"},
+]
+
+[package.dependencies]
+marshmallow = ">=3.13.0,<5.0.0"
+packaging = ">=17.0"
+
+[package.extras]
+dev = ["pre-commit (>=3.5,<5.0)", "tox", "webargs[tests]"]
+docs = ["Sphinx (==8.2.3)", "furo (==2025.9.25)", "sphinx-issues (==5.0.1)", "webargs[frameworks]"]
+frameworks = ["Django (>=2.2.0)", "Flask (>=0.12.5)", "aiohttp (>=3.0.8)", "bottle (>=0.12.13)", "falcon (>=2.0.0)", "pyramid (>=1.9.1)", "tornado (>=4.5.2)"]
+tests = ["packaging (>=17.0)", "pytest", "pytest-aiohttp (>=0.3.0)", "pytest-asyncio", "webargs[frameworks]", "webtest (==3.0.7)", "webtest-aiohttp (==2.0.0)"]
+
+[[package]]
 name = "werkzeug"
 version = "3.1.5"
 description = "The comprehensive WSGI web application library."
@@ -2659,5 +2767,5 @@ h11 = ">=0.16.0,<1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.13,<4.0.0"
-content-hash = "9a6f48e453d69a10cd744c8fae86fb21cb2a28d5635c2431d34a6f49b8a14b45"
+python-versions = ">=3.11,<4.0.0"
+content-hash = "b70ae4052ecbf7a5a342aa70f9b9f85b5accc1de608f641cc1bbdc67fe500371"

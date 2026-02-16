@@ -1,377 +1,375 @@
-# Doc Flow
+# 📌 Doc Flow – Motor Assíncrono de Conversão de Documentos
 
-## Visão Geral
+O **Doc Flow** é um backend para **processamento e conversão assíncrona de documentos**, estruturado como **monólito modular orientado a mensageria**, com comunicação desacoplada entre API e workers e notificações em tempo real via WebSocket.
 
-O **Doc Flow** é um sistema backend para **conversão e processamento assíncrono de documentos**, com foco em:
+O foco do projeto é demonstrar:
 
-* Pipelines assíncronas baseadas em mensageria
-* Workers isolados do ciclo HTTP
-* Notificações em tempo real via WebSockets
-* Isolamento por `client_id` anônimo (sem autenticação)
-* Controle de recursos e expiração automática de dados
+- Separação rigorosa de responsabilidades
+- Processamento assíncrono correto
+- Isolamento por cliente sem autenticação
+- Controle explícito de recursos
+- Efemeridade como regra arquitetural
 
-O objetivo é demonstrar **decisões arquiteturais corretas para processamento de documentos em escala**, com separação clara de responsabilidades, idempotência e previsibilidade operacional.
-
-Não é uma plataforma de gestão documental completa.
-É um motor de conversão robusto, observável e tecnicamente coerente.
+O sistema não é uma plataforma de gestão documental.
+É um **motor técnico de conversão previsível e observável**.
 
 ---
 
-# Escopo (congelado)
+## ⚠️ Disclaimer Importante – Variáveis de Ambiente (`.env`)
 
-## Incluído
+> O funcionamento do sistema depende obrigatoriamente da configuração correta do arquivo `.env`.
 
-* Upload de documentos
-* Conversão de múltiplos formatos
-* Extração básica de conteúdo
-* Processamento assíncrono via Celery + RabbitMQ
-* Notificações em tempo real via WebSockets (Socket.IO + Redis pub/sub)
-* Persistência mínima de estado de jobs (PostgreSQL)
-* Armazenamento temporário isolado por cliente
-* Limite de 250 MB por `client_id`
-* Expiração automática após 24 horas
-* Rate limiting: 10 requisições por segundo por IP
-* Identificação de cliente via cookie `client_id` (UUID v4 anônimo)
+Antes de executar localmente:
 
-## Explicitamente fora do escopo
+1. Criar o `.env` a partir do `.env.example`
+2. Garantir o preenchimento correto de todas as variáveis
 
-* Sistema de usuários / login
-* Autenticação / autorização
-* Multi-tenant
-* Billing
-* Workflows complexos
-* Versionamento de documentos
-* Arquivos muito grandes (>250 MB por cliente)
-* Processamento dependente de layout visual complexo
+Itens críticos:
 
-O escopo não deve evoluir além desses limites.
+- URL do **PostgreSQL**
+- URL do **Redis**
+- URL do **RabbitMQ**
+- Diretórios de storage
+- Configuração de CORS (`ALLOWED_ORIGINS`)
+- Configuração do Socket.IO
+- Limites de upload e TTL
+
+Falhas comuns decorrentes de má configuração:
+
+- Workers não processam jobs
+- Eventos não chegam via WebSocket
+- Erros silenciosos de conexão
+- Rate limit não funcional
+- Falhas na persistência
 
 ---
 
-# Arquitetura Geral
-
-O sistema segue o modelo de **monólito modular com fronteiras claras**, permitindo futura extração de componentes sem acoplamento excessivo.
-
-```bash
-[ Browser / Next.js ]
-          |          ↑ WebSocket (Socket.IO)
-          |          ↓ Notificações em tempo real
-          v
-[ Flask API + Socket.IO ]
-          |
-          | HTTP (upload, status, listagem)
-          v
-[ PostgreSQL ]  ← estado dos jobs
-          |
-          v
-[ RabbitMQ ] ──► [ Celery Workers ] ──► [ Storage Local ]
-                               |
-                               v
-                           [ Redis ]
-                             ↑↓ Pub/Sub (notificações)
-```
-
----
-
-# Componentes
-
-## API — Flask
-
-Responsabilidades:
-
-* Receber uploads
-* Criar jobs
-* Validar limites
-* Orquestrar o fluxo
-* Emitir eventos via Socket.IO
-
-Não executa processamento pesado.
-
----
-
-## Fila — RabbitMQ
-
-* Transporte apenas de metadados
-* Nenhum binário trafega pela fila
-* Comunicação desacoplada entre API e workers
-
----
-
-## Workers — Celery
-
-* Executam conversões
-* Atualizam status
-* Publicam eventos no Redis
-* Isolados do ciclo HTTP
-
----
-
-## Banco de Dados — PostgreSQL
-
-* Persistência do ciclo de vida de jobs
-* Auditoria técnica
-* Controle de expiração
-
----
-
-## Cache / PubSub — Redis
-
-* Cache de status
-* TTL configurável
-* Canal pub/sub para WebSockets
-
----
-
-## Storage
-
-* Volumes Docker
-* Estrutura isolada por cliente
-* Diretórios separados para input/output
-
----
-
-# Identificação e Isolamento de Clientes
-
-## Modelo
-
-* Cada cliente recebe um **UUID v4 anônimo**
-* Armazenado em cookie `client_id`
-* Criado no primeiro upload
-* Duração: 24 horas
-* Não é renovado automaticamente
-
-Após expiração ou remoção do cookie:
-
-* Jobs associados são removidos
-* Arquivos físicos são deletados
-* Cota é liberada
-
----
-
-## Isolamento físico
-
-Estrutura de diretórios:
+## 🧱 Visão Geral da Arquitetura
 
 ```
-/storage/input/{client_id}/
-/storage/output/{client_id}/
+Frontend (Next.js)
+        │
+        │ HTTP + WebSocket
+        ▼
+Flask API + Socket.IO
+        │
+        ├── PostgreSQL (estado dos jobs)
+        │
+        ├── RabbitMQ (fila de tarefas)
+        │
+        └── Redis (pub/sub + cache)
+                    │
+                    ▼
+              Celery Workers
+                    │
+                    ▼
+                Storage Local
 ```
 
+### Tecnologias Principais
+
+- Flask
+- Celery
+- RabbitMQ
+- Redis
+- PostgreSQL
+- Docker
+
 ---
 
-## Limite de armazenamento
+## 🔐 Modelo de Segurança
 
-* 250 MB por `client_id`
-* Soma de input + output
-* Novos uploads são bloqueados quando o limite é atingido
+O sistema **não possui autenticação**.
+
+O isolamento é feito exclusivamente por:
+
+- `client_id` (UUID v4)
+- Cookie HTTP-only
+- Validação de correspondência no download
+- Isolamento físico de diretórios
+- Limite de armazenamento por cliente
+- Expiração automática
+
+### Rate Limiting
+
+- 10 requisições por segundo por IP
+- Implementado na camada HTTP
+
+### Garantias
+
+- Não há enumeração de jobs
+- UUID evita previsibilidade
+- Downloads exigem correspondência de `client_id`
 
 ---
 
-# Estratégia de Arquivos
+## 📦 Domínio de Processamento
 
-## Regra fundamental
+### Estados de Job
 
-> Arquivos nunca trafegam pela fila.
+- `PENDING`
+- `PROCESSING`
+- `DONE`
+- `FAILED`
 
-## Fluxo
+### Estrutura Persistida
 
-1. API recebe upload
-2. Arquivo salvo em `/tmp/input/{client_id}`
+Tabela `DocumentJob`:
+
+- `id (UUID)`
+- `client_id`
+- `status`
+- `input_filename`
+- `input_path`
+- `output_format`
+- `output_path`
+- `error_message`
+- `created_at`
+- `processed_at`
+- `expires_at`
+
+O banco representa apenas o ciclo de vida técnico.
+
+---
+
+## 🔁 Fluxo Assíncrono
+
+1. Upload via API
+2. Arquivo salvo em `/storage/input/{client_id}`
 3. Job persistido no banco
-4. Mensagem enviada ao RabbitMQ contendo:
-
-   * `job_id`
-   * paths
-   * parâmetros
+4. Metadados enviados ao RabbitMQ
 5. Worker processa
 6. Output movido para `/storage/output/{client_id}`
 7. Status atualizado
 8. Evento publicado no Redis
-9. Arquivo expira após TTL
+9. API emite evento via WebSocket
+
+### Regra Estrutural
+
+> Arquivos nunca trafegam pela fila.
+
+A fila transporta apenas metadados.
 
 ---
 
-# Identificação de Jobs
+## 🔔 Notificações em Tempo Real
 
-* UUID v4 como chave primária
-* Gerado na aplicação
+- Workers publicam eventos no Redis
+- API consome via pub/sub
+- Emissão via Socket.IO para `room(client_id)`
 
-Motivações:
+Eventos:
 
-* Evita enumeração
-* Facilita correlação de logs
-* Compatível com arquitetura distribuída
-
----
-
-# Modelo de Dados (mínimo)
-
-## DocumentJob
-
-* `id (UUID)`
-* `client_id (UUID)`
-* `status` (PENDING | PROCESSING | DONE | FAILED)
-* `input_filename`
-* `input_path`
-* `output_format`
-* `output_path`
-* `error_message`
-* `created_at`
-* `processed_at`
-* `expires_at`
-
-O banco representa apenas o ciclo de vida técnico de jobs.
-
----
-
-# Notificações em Tempo Real
-
-WebSocket via Socket.IO com Redis pub/sub.
-
-## Fluxo
-
-1. Worker altera status
-2. Publica evento no Redis
-3. API consome evento
-4. Evento emitido para `room(client_id)`
-
-## Eventos
-
-* `job_processing`
-* `job_done`
-* `job_failed`
+- `job_processing`
+- `job_done`
+- `job_failed`
 
 Sem polling contínuo.
 
 ---
 
-# Estratégia de Expiração
+## 🗃️ Estratégia de Armazenamento
 
-* TTL padrão: 24h
-* Campo `expires_at` persistido
-* Tarefa periódica (Celery Beat) executa:
+Estrutura física:
 
-  * Limpeza de registros
-  * Remoção física de arquivos
-  * Liberação de cota
+```
+/storage/input/{client_id}
+/storage/output/{client_id}
+```
 
-Efemeridade é regra do sistema.
+### Limites
 
----
+- 250 MB por `client_id`
+- Soma de input + output
+- Upload bloqueado quando limite atingido
 
-# Conversões Suportadas
+### Expiração
 
-## 1. Dados tabulares
+- TTL padrão: 24h
+- Tarefa periódica remove:
+  - Registros
+  - Arquivos físicos
+  - Libera cota
 
-* CSV ↔ Excel ↔ JSON ↔ Parquet
-* Biblioteca: `pandas`
-
-## 2. Texto estruturado
-
-* Markdown ↔ HTML ↔ TXT
-* Bibliotecas: `markitdown`, `markdown`
-
-## 3. TXT → PDF
-
-* `ReportLab`, `fpdf`
-
-## 4. PDF → TXT
-
-* `pdfplumber`, `PyPDF2`, `tika`
-
-## 5. Office → formatos de visão
-
-* DOCX / PPTX → PDF / Markdown
-* `docling`, `python-docx`, `markitdown`
-
-Conversões dependentes de layout complexo não são objetivo.
+Efemeridade é comportamento padrão.
 
 ---
 
-# Stack Tecnológica
+## 🔄 Conversões Suportadas
 
-## Backend
+### Dados tabulares
 
-* Python 3.11+
-* Flask
-* SQLAlchemy 2.0
-* Alembic
-* Celery
-* RabbitMQ
-* Redis
-* PostgreSQL
+- CSV ↔ Excel ↔ JSON
+- `pandas`
 
-## Infra
+### Texto estruturado
 
-* Docker
-* Docker Compose
+- Markdown ↔ HTML ↔ TXT
+- `markdown`, `markitdown`
 
-## Qualidade
+### TXT → PDF
 
-* pytest
-* logging estruturado
+- `ReportLab`, `fpdf`
 
----
+### PDF → TXT
 
-# Frontend
+- `pdfplumber`, `PyPDF2`, `tika`
 
-Interface operacional mínima.
+### Office → visão
 
-## Stack
+- DOCX / PPTX → PDF / Markdown
+- `python-docx`, `docling`
 
-* Next.js
-* Tailwind CSS
-* shadcn/ui
-
-## Funções
-
-* Upload
-* Listagem de jobs
-* Visualização de status
-* Download
-
-Sem lógica de negócio relevante.
+Conversões dependentes de layout visual complexo não fazem parte do escopo.
 
 ---
 
-# Princípios Arquiteturais
+## 🧪 Testes Automatizados
 
-* Escopo controlado
-* Mensageria correta
-* Separação de responsabilidades
-* Idempotência
-* Observabilidade
-* Arquitetura evolutiva sem overengineering
-* Efemeridade por design
+Testes focados na camada de domínio:
+
+- Services
+- Validações
+- Controle de cota
+- Expiração
+- Regras de status
+
+Estratégia:
+
+- Repositórios mockados
+- Simulação de workers
+- Testes de erro e fluxos felizes
+
+Objetivo: confiabilidade estrutural, não cobertura artificial.
 
 ---
 
-# Comandos para execução
+## 📑 Documentação da API (Swagger)
+
+A API está documentada via:
+
+- flask-smorest
+- marshmallow
+- Swagger UI
+
+### Acesso
+
+```
+http://localhost:4000/docs/swagger
+```
+
+### O que está documentado
+
+- Todas as rotas HTTP
+- Schemas de request/response
+- Parâmetros de rota
+- Status codes
+- Validações
+
+O Swagger representa o contrato real da API.
+
+Não documenta eventos internos de mensageria.
+
+---
+
+## 🐳 Infraestrutura & Docker
+
+Serviços orquestrados via Docker Compose:
+
+- Web
+- API
+- Worker
+- Celery Beat
+- PostgreSQL
+- Redis
+- RabbitMQ
+
+Execução:
 
 ```bash
+docker compose up --build
+```
+
+---
+
+## 🗄️ Banco de Dados & Migrations
+
+- SQLAlchemy 2.0
+- Alembic
+- `synchronize` não utilizado
+- Migrations explícitas
+
+Banco único com separação lógica por domínio.
+
+---
+
+## ▶️ Execução Local
+
+> backend
+
+```bash
+poetry install
 poetry run start-api
-```
-
-```bash
 poetry run start-worker
-```
-
-```bash
 poetry run celery -A src.workers.celery_app beat --loglevel=info
 ```
 
+> frontend
+
+```bash
+npm run dev
+```
+
+Pré-requisitos:
+
+- Python 3.11+
+- PostgreSQL
+- Redis
+- RabbitMQ
+- `.env` configurado
+
 ---
 
-# Observação Final
+## 🧠 Decisões Técnicas
 
-Este projeto não é um CRUD nem um protótipo superficial.
+- Monólito modular (evita complexidade prematura)
+- Mensageria para desacoplamento
+- UUID para evitar enumeração
+- TTL obrigatório
+- Storage isolado por cliente
+- WebSocket fora do fluxo HTTP
+- Arquivos fora da fila
 
-Ele demonstra como sistemas reais de processamento de documentos são estruturados para:
+---
 
-* Escalar
-* Isolar responsabilidades
-* Controlar recursos
-* Evitar acoplamento indevido
-* Manter previsibilidade operacional
+## ⚠️ Trade-offs
 
-O foco é engenharia responsável, não volume de funcionalidades.
+- Sem autenticação (decisão consciente)
+- Limite rígido de 250 MB
+- Conversões complexas fora do escopo
+- Observabilidade básica (logging estruturado)
+
+---
+
+## 🚀 Melhorias Futuras
+
+- Retry + DLQ no RabbitMQ
+- Cache Redis para consultas frequentes
+- Observabilidade avançada (OpenTelemetry)
+- Testes E2E
+- Storage externo (S3-compatible)
+- Métricas Prometheus
+
+---
+
+## 🎯 Objetivo do Projeto
+
+Demonstrar como um sistema real de processamento de documentos deve ser estruturado para:
+
+- Escalar horizontalmente
+- Controlar recursos
+- Evitar acoplamento
+- Manter previsibilidade operacional
+- Operar com efemeridade como padrão
+
+O foco é engenharia sólida, não expansão indiscriminada de funcionalidades.
