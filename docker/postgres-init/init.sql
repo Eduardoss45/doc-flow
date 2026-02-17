@@ -1,1 +1,1 @@
--- CREATE DATABASE df_<nome do banco>_db; 
+CREATE DATABASE df_document_processor_db;

@@ -222,7 +222,7 @@ export default function FileConverter() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : historyError ? (
-            <div className="text-center text-destructive py-8 text-sm">
+            <div className="text-center text-destructive py-8 text-sm px-4">
               {historyError}
               <Button variant="outline" size="sm" className="mt-4" onClick={refreshHistory}>
                 Tentar novamente

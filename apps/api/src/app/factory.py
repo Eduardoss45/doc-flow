@@ -5,15 +5,15 @@ from flask_limiter.util import get_remote_address
 from flask_smorest import Api
 from marshmallow import ValidationError
 
-from src.app.config import config
-from src.socket.server import socketio, init_socketio
-from src.infra.db.db import SessionLocal, engine, Base
-from src.repositories.document_repository import DocumentRepository
-from src.repositories.client_storage_repository import ClientStorageRepository
-from src.services.document_service import DocumentService
-from src.http.documents.routes import documents_bp
-from src.http.auth.routes import auth_bp
-from src.workers.celery_app import celery
+from app.config import config
+from app.realtime.server import socketio, init_socketio
+from app.infra.db.db import SessionLocal, engine, Base
+from app.repositories.document_repository import DocumentRepository
+from app.repositories.client_storage_repository import ClientStorageRepository
+from app.services.document_service import DocumentService
+from app.http.documents.routes import documents_bp
+from app.http.auth.routes import auth_bp
+from app.workers.celery_app import celery
 
 
 def create_app() -> Flask:

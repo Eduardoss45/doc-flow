@@ -224,23 +224,182 @@ Conversões dependentes de layout visual complexo não fazem parte do escopo.
 
 ---
 
-## 🧪 Testes Automatizados
+## 🐳 Infraestrutura & Docker
 
-Testes focados na camada de domínio:
+O projeto é totalmente containerizado utilizando **Docker** e orquestrado via **Docker Compose**, garantindo:
 
-- Services
-- Validações
-- Controle de cota
-- Expiração
-- Regras de status
+- Isolamento de dependências
+- Reprodutibilidade do ambiente
+- Inicialização previsível
+- Execução uniforme entre ambientes
 
-Estratégia:
+Todos os serviços são executados como containers independentes, comunicando-se exclusivamente via rede interna do Docker.
 
-- Repositórios mockados
-- Simulação de workers
-- Testes de erro e fluxos felizes
+---
 
-Objetivo: confiabilidade estrutural, não cobertura artificial.
+### Serviços Orquestrados
+
+O `docker-compose.yml` define os seguintes serviços:
+
+- **Frontend (Next.js)**
+- **API (Flask + Socket.IO)**
+- **Worker (Celery)**
+- **Celery Beat**
+- **PostgreSQL**
+- **Redis**
+- **RabbitMQ**
+
+Arquiteturalmente:
+
+- A **API** é responsável pelo HTTP e WebSocket.
+- O **Worker** executa tarefas assíncronas.
+- O **Beat** agenda tarefas periódicas (ex.: expiração de arquivos).
+- O **RabbitMQ** atua como broker.
+- O **Redis** é utilizado para pub/sub e backend de resultados.
+- O **PostgreSQL** mantém o estado dos jobs.
+
+Todos os serviços compartilham a mesma rede Docker interna.
+
+---
+
+### Execução com Docker
+
+Para subir todo o ambiente:
+
+```bash
+docker compose up --build
+```
+
+Esse comando:
+
+- Constrói as imagens necessárias
+- Cria a rede interna
+- Inicializa todos os containers
+- Conecta automaticamente os serviços pelos nomes definidos no compose
+
+Após inicialização:
+
+- API disponível em `http://localhost:4000`
+- Swagger disponível em `http://localhost:4000/docs/swagger`
+- Frontend disponível em `http://localhost:3000`
+
+---
+
+### Comunicação Interna
+
+A comunicação entre serviços ocorre exclusivamente via hostname interno do Docker:
+
+- `postgres`
+- `redis`
+- `rabbitmq`
+- `api`
+- `worker`
+
+Exemplo de URL interna válida:
+
+```
+amqp://guest:guest@rabbitmq:5672
+redis://redis:6379/0
+postgresql+psycopg://user:pass@postgres:5432/db
+```
+
+Não há dependência de `localhost` dentro dos containers.
+
+---
+
+### Health Checks & Dependências
+
+Os serviços utilizam:
+
+- `depends_on`
+- Inicialização controlada por ordem lógica
+
+No entanto:
+
+> A disponibilidade real é garantida por retry interno (ex.: Celery e SQLAlchemy), não apenas por dependência declarativa.
+
+Isso evita falhas prematuras caso algum serviço ainda esteja inicializando.
+
+---
+
+### Persistência de Dados
+
+Volumes são utilizados para:
+
+- Persistência do PostgreSQL
+- Persistência do RabbitMQ
+- Diretório `/storage` (input/output de arquivos)
+
+Isso garante que:
+
+- Jobs não sejam perdidos em restart
+- Arquivos persistam até expiração
+- Broker mantenha estado de filas
+
+---
+
+### Observações Operacionais
+
+- Alterações em código exigem rebuild (`--build`)
+- Alterações apenas no `docker-compose.yml` não exigem rebuild
+- Containers são stateless (exceto serviços com volume)
+
+Logs podem ser inspecionados via:
+
+```bash
+docker compose logs -f
+```
+
+Ou por serviço específico:
+
+```bash
+docker compose logs -f worker
+```
+
+---
+
+## 🗄️ Banco de Dados & Migrations (Docker)
+
+- **SQLAlchemy 2.0**
+- **Alembic**
+- `synchronize` não utilizado
+- Migrations explícitas e versionadas
+
+As migrations podem ser executadas manualmente dentro do container da API:
+
+```bash
+docker compose exec api alembic upgrade head
+```
+
+O banco é único, com separação lógica por domínio.
+
+---
+
+## ▶️ Execução Local (Ambiente Containerizado)
+
+Pré-requisitos:
+
+- Docker
+- Docker Compose
+- Arquivo `.env` configurado corretamente
+
+Subida do ambiente:
+
+```bash
+docker compose up --build
+```
+
+Parada:
+
+```bash
+docker compose down
+```
+
+Parada removendo volumes:
+
+```bash
+docker compose down -v
+```
 
 ---
 
