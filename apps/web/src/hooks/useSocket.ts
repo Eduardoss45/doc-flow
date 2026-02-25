@@ -1,23 +1,19 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { ensureClientId } from '@/services/auth';
 
 export function useSocket() {
-  const socketRef = useRef<Socket | null>(null);
-
   useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000', {
+    const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000', {
       withCredentials: true,
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 3000,
     });
-
-    socketRef.current = socket;
 
     socket.on('connect', () => {
       console.log('Socket conectado');
@@ -34,6 +30,8 @@ export function useSocket() {
         duration: 10000,
         description: data.filename ? `Arquivo: ${data.filename}` : undefined,
       });
+
+      window.dispatchEvent(new CustomEvent('conversion:completed', { detail: data }));
     });
 
     socket.on('job_failed', data => {
@@ -62,9 +60,6 @@ export function useSocket() {
 
     return () => {
       socket.disconnect();
-      socketRef.current = null;
     };
   }, []);
-
-  return socketRef.current;
 }

@@ -470,7 +470,7 @@ Banco único com separação lógica por domínio.
 poetry install
 poetry run start-api
 poetry run start-worker
-poetry run celery -A src.workers.celery_app beat --loglevel=info
+poetry run celery -A src.app.workers.celery_app beat --loglevel=info
 ```
 
 > frontend

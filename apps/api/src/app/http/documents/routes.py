@@ -127,6 +127,7 @@ def list_user_files():
                     "filename": filename,
                     "size_bytes": stat.st_size,
                     "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
                     "download_url": download_url,
                     "extension": entry.suffix.lstrip(".").upper() or None,
                 }

@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { convertFile } from '@/services/conversion';
 import { toast } from 'sonner';
 import { api } from '@/infra/api';
+import { ensureClientId } from '@/services/auth';
 
 export type ConversionType =
   | 'csv_to_json'
@@ -65,13 +66,20 @@ export function useFileConversion() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
+      const clientId = await ensureClientId();
+      if (!clientId) {
+        setProcessedFiles([]);
+        setHistoryError('NÃ£o foi possÃ­vel iniciar sua sessÃ£o');
+        return;
+      }
+
       const res = await api.get('/documents/files')
       if (res.data?.files && Array.isArray(res.data.files)) {
         setProcessedFiles(res.data.files);
       } else {
         setProcessedFiles([]);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao carregar histórico:', err);
       setHistoryError('Não foi possível carregar o histórico de conversões');
       setProcessedFiles([]);
@@ -82,6 +90,18 @@ export function useFileConversion() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  useEffect(() => {
+    const handleConversionCompleted = () => {
+      fetchHistory();
+    };
+
+    window.addEventListener('conversion:completed', handleConversionCompleted);
+    return () => {
+      window.removeEventListener('conversion:completed', handleConversionCompleted);
+    };
+  }, [fetchHistory]);
+
   useEffect(() => {
     if (!loading && !error && processedFiles.length > 0) {
      const timer = setTimeout(fetchHistory, 1800);

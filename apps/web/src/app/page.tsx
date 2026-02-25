@@ -29,7 +29,6 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 export default function FileConverter() {
   const {
@@ -54,6 +53,22 @@ export default function FileConverter() {
 
   const hasValidConversion = availableConversions.length > 0;
   const canConvert = !!file && hasValidConversion && !loading;
+
+  const getDisplayFilename = (filename: string) => {
+    const match = filename.match(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}_(.+)$/
+    );
+    return match?.[1] ?? filename;
+  };
+
+  const formatModifiedAt = (modifiedAt: string) => {
+    const date = new Date(modifiedAt);
+    if (Number.isNaN(date.getTime())) return 'Data indisponivel';
+    return date.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex">
@@ -253,13 +268,11 @@ export default function FileConverter() {
                       <div className="flex items-center gap-3 min-w-0">
                         <FileText className="h-5 w-5 text-primary shrink-0" />
                         <div className="min-w-0">
-                          <p className="font-medium truncate max-w-[220px]">{file.filename}</p>
+                          <p className="font-medium truncate max-w-[220px]">
+                            {getDisplayFilename(file.filename)}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {file.size_mb.toFixed(2)} MB •{' '}
-                            {new Date(file.modified_at).toLocaleString('pt-BR', {
-                              dateStyle: 'short',
-                              timeStyle: 'short',
-                            })}
+                            {file.size_mb.toFixed(2)} MB - {formatModifiedAt(file.modified_at)}
                           </p>
                         </div>
                       </div>

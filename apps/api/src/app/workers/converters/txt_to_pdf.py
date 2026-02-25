@@ -5,11 +5,12 @@ from pathlib import Path
 def convert(input_path: str | Path, output_path: str | Path) -> None:
     pdf = FPDF()
     pdf.add_page()
+    font_path = Path(__file__).resolve().parents[1] / "fonts" / "Roboto-Regular.ttf"
 
     pdf.add_font(
         family="Roboto-Regular",
         style="",
-        fname="src/workers/fonts/Roboto-Regular.ttf",
+        fname=str(font_path),
         uni=True,
     )
     pdf.set_font("Roboto-Regular", size=12)

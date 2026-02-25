@@ -43,24 +43,29 @@ export async function convertFile(file: File, conversionType: string): Promise<C
       success: false,
       error: data.message || 'Resposta inesperada do servidor',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as {
+      response?: { data?: { error?: string }; statusText?: string; status?: number };
+      request?: unknown;
+      message?: string;
+    };
     let message = 'Erro ao converter o arquivo';
 
-    if (error.response) {
-      const serverMsg = error.response.data?.error || error.response.statusText;
-      if (error.response.status === 400) {
+    if (err.response) {
+      const serverMsg = err.response.data?.error || err.response.statusText || '';
+      if (err.response.status === 400) {
         message = serverMsg.includes('client_id')
           ? 'Sessão não identificada. Tente novamente.'
           : serverMsg || 'Requisição inválida';
-      } else if (error.response.status === 403) {
+      } else if (err.response.status === 403) {
         message = 'Limite de cota atingido ou acesso negado';
       } else {
-        message = serverMsg || `Erro ${error.response.status}`;
+        message = serverMsg || `Erro ${err.response.status}`;
       }
-    } else if (error.request) {
+    } else if (err.request) {
       message = 'Sem resposta do servidor. Verifique sua conexão.';
     } else {
-      message = error.message || 'Erro inesperado';
+      message = err.message || 'Erro inesperado';
     }
 
     toast.error(message);

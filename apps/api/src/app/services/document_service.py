@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from uuid import UUID
 from pathlib import Path
+from typing import TYPE_CHECKING
 from app.domain.entities.document_job import DocumentJob
 from app.domain.enums.conversion_type import ConversionType
-from app.repositories.document_repository import DocumentRepository
-from app.repositories.client_storage_repository import ClientStorageRepository
 from app.infra.utils import get_client_input_dir, get_client_output_dir
+
+if TYPE_CHECKING:
+    from app.repositories.document_repository import DocumentRepository
+    from app.repositories.client_storage_repository import ClientStorageRepository
 
 
 class DocumentService:
