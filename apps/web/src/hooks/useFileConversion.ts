@@ -11,7 +11,8 @@ export type ConversionType =
   | 'txt_to_pdf'
   | 'pdf_to_text'
   | 'docx_to_pdf'
-  | 'docx_to_markdown';
+  | 'docx_to_markdown'
+  | 'markdown_to_pdf';
 
 const CONVERSION_LABELS: Record<ConversionType, string> = {
   csv_to_json: 'CSV → JSON',
@@ -21,6 +22,7 @@ const CONVERSION_LABELS: Record<ConversionType, string> = {
   pdf_to_text: 'PDF → Texto',
   docx_to_pdf: 'Word → PDF',
   docx_to_markdown: 'Word → Markdown',
+  markdown_to_pdf: 'Markdown → PDF',
 };
 
 const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
@@ -30,6 +32,7 @@ const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
   txt: ['txt_to_pdf'],
   pdf: ['pdf_to_text'],
   docx: ['docx_to_pdf', 'docx_to_markdown'],
+  markdown: ['markdown_to_pdf'],
 };
 
 const FALLBACK: ConversionType[] = [];
@@ -69,11 +72,11 @@ export function useFileConversion() {
       const clientId = await ensureClientId();
       if (!clientId) {
         setProcessedFiles([]);
-        setHistoryError('NÃ£o foi possÃ­vel iniciar sua sessÃ£o');
+        setHistoryError('Não foi possível iniciar sua sessão');
         return;
       }
 
-      const res = await api.get('/documents/files')
+      const res = await api.get('/documents/files');
       if (res.data?.files && Array.isArray(res.data.files)) {
         setProcessedFiles(res.data.files);
       } else {
@@ -104,7 +107,7 @@ export function useFileConversion() {
 
   useEffect(() => {
     if (!loading && !error && processedFiles.length > 0) {
-     const timer = setTimeout(fetchHistory, 1800);
+      const timer = setTimeout(fetchHistory, 1800);
       return () => clearTimeout(timer);
     }
   }, [loading, error, processedFiles.length, fetchHistory]);
@@ -144,7 +147,7 @@ export function useFileConversion() {
 
     if (response.success && response.jobId) {
       toast.success('Processamento iniciado! Aguarde o resultado.');
-  } else {
+    } else {
       setError(response.error ?? 'Falha na conversão');
     }
 

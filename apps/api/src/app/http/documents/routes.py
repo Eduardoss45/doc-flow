@@ -17,7 +17,6 @@ from app.infra.utils import get_client_output_dir, get_client_input_dir
 from app.domain.enums.conversion_type import ConversionType
 from app.services.document_service import DocumentService
 
-
 documents_bp = ApiBlueprint(
     "documents",
     __name__,
@@ -26,7 +25,7 @@ documents_bp = ApiBlueprint(
 )
 
 
-ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "txt", "pdf", "docx", "doc"}
+ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "txt", "pdf", "docx", "doc", "md"}
 
 
 def allowed_file(filename: str) -> bool:
@@ -127,7 +126,9 @@ def list_user_files():
                     "filename": filename,
                     "size_bytes": stat.st_size,
                     "size_mb": round(stat.st_size / (1024 * 1024), 2),
-                    "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
+                    "modified_at": datetime.fromtimestamp(
+                        stat.st_mtime, tz=timezone.utc
+                    ),
                     "download_url": download_url,
                     "extension": entry.suffix.lstrip(".").upper() or None,
                 }

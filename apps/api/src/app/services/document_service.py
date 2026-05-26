@@ -50,6 +50,7 @@ class DocumentService:
             ConversionType.PDF_TO_TEXT: "txt",
             ConversionType.DOCX_TO_PDF: "pdf",
             ConversionType.DOCX_TO_MARKDOWN: "md",
+            ConversionType.MARKDOWN_TO_PDF: "pdf",
         }
         ext = ext_map.get(conversion_type, "out")
         job.output_path = str(output_dir / f"{job.id}.{ext}")
