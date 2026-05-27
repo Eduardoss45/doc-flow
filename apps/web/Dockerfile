@@ -1,10 +1,13 @@
 FROM node:20-alpine AS builder
-WORKDIR /app
+WORKDIR /app/apps/web
 
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm install --legacy-peer-deps
 
-COPY apps/web ./apps/web
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+COPY apps/web .
 
 WORKDIR /app/apps/web
 

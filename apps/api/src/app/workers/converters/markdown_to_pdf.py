@@ -6,6 +6,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 from pygments.lexers.special import TextLexer
+import bleach
 
 
 def highlight_code(code: str, lang: str | None, attrs=None) -> str:
@@ -35,6 +36,42 @@ def convert(input_path: str, output_path: str) -> None:
         },
     )
     html_body = md.render(markdown_content)
+
+    html_body = bleach.clean(
+        html_body,
+        tags=[
+            "p",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "ul",
+            "ol",
+            "li",
+            "strong",
+            "em",
+            "blockquote",
+            "code",
+            "pre",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "td",
+            "th",
+            "a",
+            "img",
+            "hr",
+            "br",
+        ],
+        attributes={
+            "a": ["href", "title"],
+            "img": ["src", "alt"],
+            "code": ["class"],
+        },
+        protocols=["http", "https"],
+        strip=True,
+    )
 
     formatter = HtmlFormatter(
         style="friendly",

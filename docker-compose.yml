@@ -111,6 +111,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     command: poetry run start-worker
+    shm_size: "1gb"
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:2009@postgres:5432/df_document_processor_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
@@ -133,7 +134,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        VITE_API_URL: http://localhost:4000
+        NEXT_PUBLIC_API_URL: http://localhost:4000
     command: npm run start
     ports:
       - "3000:3000"

@@ -32,7 +32,7 @@ const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
   txt: ['txt_to_pdf'],
   pdf: ['pdf_to_text'],
   docx: ['docx_to_pdf', 'docx_to_markdown'],
-  markdown: ['markdown_to_pdf'],
+  md: ['markdown_to_pdf'],
 };
 
 const FALLBACK: ConversionType[] = [];
