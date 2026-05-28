@@ -117,6 +117,9 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_URL: redis://redis:6379/0
       TIMEZONE: America/Sao_Paulo
+      ALLOWED_IMAGE_DOMAINS: raw.githubusercontent.com,githubusercontent.com,cdn.jsdelivr.net,images.unsplash.com
+      ALLOWED_IMAGE_TYPES: image/png,image/jpeg,image/webp,image/gif
+      MAX_IMAGE_SIZE: 5 * 1024 * 1024
     volumes:
       - storage:/app/src/app/infra/storage
     depends_on:
