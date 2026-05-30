@@ -532,3 +532,31 @@ Demonstrar como um sistema real de processamento de documentos deve ser estrutur
 - Operar com efemeridade como padrão
 
 O foco é engenharia sólida, não expansão indiscriminada de funcionalidades.
+
+---
+
+## UPGRADE — Observabilidade e Isolamento de Serviços
+
+[ ] Separar API HTTP do worker Chromium/render
+[ ] Criar imagem Docker dedicada para renderização
+[ ] Remover dependências desnecessárias entre serviços
+[ ] Isolar scheduler/beat em container próprio
+[ ] Implementar agente central de auditoria/logs
+[ ] Centralizar:
+    - errors
+    - warnings
+    - eventos críticos
+    - métricas básicas
+    - falhas de jobs
+[ ] Adicionar alertas por email para falhas críticas
+[ ] Criar sistema de download autorizado de logs
+[ ] Adicionar retenção/rotação de logs
+[ ] Mapear consumo de memória/CPU por worker
+[ ] Adicionar correlation-id/job-id entre serviços
+[ ] Avaliar tracing distribuído no futuro
+[ ] Reduzir tamanho das imagens Docker por função
+[ ] Revisar boundaries entre:
+    - API
+    - workers
+    - scheduler
+    - auditoria

@@ -9,4 +9,4 @@ class ConversionType(str, Enum):
     PDF_TO_TEXT = "pdf_to_text"
     DOCX_TO_PDF = "docx_to_pdf"
     DOCX_TO_MARKDOWN = "docx_to_markdown"
-    MARKDOWN_TO_PDF = "markdown_to_pdf.converter"
+    MARKDOWN_TO_PDF = "markdown_to_pdf"

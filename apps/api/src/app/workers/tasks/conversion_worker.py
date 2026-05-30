@@ -23,7 +23,7 @@ CONVERTERS = {
     ConversionType.PDF_TO_TEXT: "pdf_to_text.convert",
     ConversionType.DOCX_TO_PDF: "docx_to_pdf.convert",
     ConversionType.DOCX_TO_MARKDOWN: "docx_to_markdown.convert",
-    ConversionType.MARKDOWN_TO_PDF: "markdown_to_pdf.convert"
+    ConversionType.MARKDOWN_TO_PDF: "markdown_to_pdf.converter.convert",
 }
 
 

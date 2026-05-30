@@ -1,36 +1,101 @@
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    TimeoutError,
+)
+
+from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import url2pathname
+
 from playwright.sync_api import sync_playwright
+
+PLAYWRIGHT_TIMEOUT_MS = 30_000
+PDF_RENDER_TIMEOUT_SECONDS = 60
+
+
+def _render_pdf_sync(
+    html_document: str,
+    output_path: str,
+    allowed_asset_dirs: list[Path],
+) -> None:
+    browser = None
+
+    allowed_asset_dirs = [allowed_dir.resolve() for allowed_dir in allowed_asset_dirs]
+
+    def handle_route(route):
+        request_url = route.request.url
+
+        parsed = urlparse(request_url)
+
+        if parsed.scheme == "file":
+            file_path = Path(url2pathname(parsed.path)).resolve()
+
+            for allowed_dir in allowed_asset_dirs:
+                try:
+                    file_path.relative_to(allowed_dir)
+
+                    route.continue_()
+                    return
+
+                except ValueError:
+                    pass
+
+        route.abort()
+
+    with sync_playwright() as playwright:
+        try:
+            browser = playwright.chromium.launch(
+                headless=True,
+                args=[
+                    "--disable-dev-shm-usage",
+                ],
+            )
+
+            page = browser.new_page(
+                java_script_enabled=False,
+            )
+
+            page.set_default_timeout(PLAYWRIGHT_TIMEOUT_MS)
+
+            page.set_default_navigation_timeout(PLAYWRIGHT_TIMEOUT_MS)
+
+            page.route(
+                "**/*",
+                handle_route,
+            )
+
+            page.set_content(
+                html_document,
+                wait_until="load",
+                timeout=PLAYWRIGHT_TIMEOUT_MS,
+            )
+
+            page.pdf(
+                path=output_path,
+                format="A4",
+                print_background=True,
+            )
+
+        finally:
+            if browser:
+                browser.close()
 
 
 def render_pdf(
     html_document: str,
     output_path: str,
+    allowed_asset_dirs: list[Path],
 ) -> None:
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-dev-shm-usage",
-            ],
-        )
-
-        page = browser.new_page(
-            java_script_enabled=False,
-        )
-
-        page.route(
-            "**/*",
-            lambda route: route.abort(),
-        )
-
-        page.set_content(
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            _render_pdf_sync,
             html_document,
-            wait_until="load",
+            output_path,
+            allowed_asset_dirs,
         )
 
-        page.pdf(
-            path=output_path,
-            format="A4",
-            print_background=True,
-        )
+        try:
+            future.result(timeout=PDF_RENDER_TIMEOUT_SECONDS)
 
-        browser.close()
+        except TimeoutError:
+            raise TimeoutError("Markdown PDF render exceeded timeout")

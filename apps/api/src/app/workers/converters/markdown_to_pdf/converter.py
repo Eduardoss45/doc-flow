@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 from jinja2 import Template
@@ -10,38 +11,57 @@ from .markdown_parser import (
     get_pygments_css,
 )
 
+from .limits import (
+    validate_markdown_limits,
+    validate_html_limits,
+)
+
 
 def convert(
     input_path: str,
     output_path: str,
 ) -> None:
-    input_file = Path(input_path)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_assets_dir = Path(temp_dir)
 
-    markdown_content = input_file.read_text(encoding="utf-8")
+        input_file = Path(input_path)
 
-    html_body = render_markdown(markdown_content)
+        markdown_content = input_file.read_text(encoding="utf-8")
 
-    html_body = sanitize_html(html_body)
+        validate_markdown_limits(markdown_content)
 
-    html_body = process_assets(html_body)
+        html_body = render_markdown(markdown_content)
 
-    pygments_css = get_pygments_css()
+        html_body = sanitize_html(html_body)
 
-    fonts_dir = Path(__file__).parent / ".." / ".." / "fonts"
+        validate_html_limits(html_body)
 
-    font_url = (fonts_dir / "Roboto-Regular.ttf").resolve().as_uri()
+        html_body = process_assets(
+            html_body,
+            temp_assets_dir,
+        )
 
-    template_path = Path(__file__).parent / "templates" / "base.html"
+        pygments_css = get_pygments_css()
 
-    template = Template(template_path.read_text(encoding="utf-8"))
+        fonts_dir = Path(__file__).parent / ".." / ".." / "fonts"
 
-    html_document = template.render(
-        content=html_body,
-        pygments_css=pygments_css,
-        font_url=font_url,
-    )
+        font_url = (fonts_dir / "Roboto-Regular.ttf").resolve().as_uri()
 
-    render_pdf(
-        html_document=html_document,
-        output_path=output_path,
-    )
+        template_path = Path(__file__).parent / "templates" / "base.html"
+
+        template = Template(template_path.read_text(encoding="utf-8"))
+
+        html_document = template.render(
+            content=html_body,
+            pygments_css=pygments_css,
+            font_url=font_url,
+        )
+
+        render_pdf(
+            html_document=html_document,
+            output_path=output_path,
+            allowed_asset_dirs=[
+                temp_assets_dir,
+                fonts_dir.resolve(),
+            ],
+        )

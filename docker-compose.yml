@@ -119,7 +119,12 @@ services:
       TIMEZONE: America/Sao_Paulo
       ALLOWED_IMAGE_DOMAINS: raw.githubusercontent.com,githubusercontent.com,cdn.jsdelivr.net,images.unsplash.com
       ALLOWED_IMAGE_TYPES: image/png,image/jpeg,image/webp,image/gif
-      MAX_IMAGE_SIZE: 5 * 1024 * 1024
+      MAX_IMAGE_SIZE: "5242880"
+      MAX_MARKDOWN_SIZE: "5242880"
+      MAX_MARKDOWN_LINES: "20000"
+      MAX_MARKDOWN_IMAGES: "20"
+      MAX_RENDERED_HTML_SIZE: "5242880"
+      MAX_HTML_NODES: "50000"
     volumes:
       - storage:/app/src/app/infra/storage
     depends_on:
