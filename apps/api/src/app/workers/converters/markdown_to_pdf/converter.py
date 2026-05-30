@@ -3,6 +3,8 @@ from pathlib import Path
 
 from jinja2 import Template
 
+from app.config import config
+
 from .assets import process_assets
 from .renderer import render_pdf
 from .sanitize import sanitize_html
@@ -57,8 +59,15 @@ def convert(
             font_url=font_url,
         )
 
+        if config.MARKDOWN_PDF_DEBUG_HTML:
+            debug_path = Path(output_path).with_suffix(".debug.html")
+            debug_path.write_text(html_document, encoding="utf-8")
+
+        html_file = temp_assets_dir / "document.html"
+        html_file.write_text(html_document, encoding="utf-8")
+
         render_pdf(
-            html_document=html_document,
+            html_file=html_file,
             output_path=output_path,
             allowed_asset_dirs=[
                 temp_assets_dir,

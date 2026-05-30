@@ -14,12 +14,13 @@ PDF_RENDER_TIMEOUT_SECONDS = 60
 
 
 def _render_pdf_sync(
-    html_document: str,
+    html_file: Path,
     output_path: str,
     allowed_asset_dirs: list[Path],
 ) -> None:
     browser = None
 
+    html_file = html_file.resolve()
     allowed_asset_dirs = [allowed_dir.resolve() for allowed_dir in allowed_asset_dirs]
 
     def handle_route(route):
@@ -64,8 +65,8 @@ def _render_pdf_sync(
                 handle_route,
             )
 
-            page.set_content(
-                html_document,
+            page.goto(
+                html_file.as_uri(),
                 wait_until="load",
                 timeout=PLAYWRIGHT_TIMEOUT_MS,
             )
@@ -82,14 +83,14 @@ def _render_pdf_sync(
 
 
 def render_pdf(
-    html_document: str,
+    html_file: Path,
     output_path: str,
     allowed_asset_dirs: list[Path],
 ) -> None:
     with ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(
             _render_pdf_sync,
-            html_document,
+            html_file,
             output_path,
             allowed_asset_dirs,
         )

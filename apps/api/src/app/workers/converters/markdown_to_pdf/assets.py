@@ -9,8 +9,9 @@ from app.config import config
 
 def download_asset_to_temp_file(url: str, temp_dir: Path) -> tuple[Path, str] | None:
     with requests.get(url, stream=True, timeout=5, allow_redirects=False) as response:
+        response.raise_for_status()
 
-        content_type = response.headers.get("Content-type", "").split(";")[0].lower()
+        content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
 
         if content_type not in config.ALLOWED_IMAGE_TYPES:
             return None

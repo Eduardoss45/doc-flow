@@ -125,6 +125,7 @@ services:
       MAX_MARKDOWN_IMAGES: "20"
       MAX_RENDERED_HTML_SIZE: "5242880"
       MAX_HTML_NODES: "50000"
+      MARKDOWN_PDF_DEBUG_HTML: "true"
     volumes:
       - storage:/app/src/app/infra/storage
     depends_on:

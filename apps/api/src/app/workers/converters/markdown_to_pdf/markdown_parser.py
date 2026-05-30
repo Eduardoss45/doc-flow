@@ -22,7 +22,7 @@ def highlight_code(code: str, lang: str | None, attrs=None) -> str:
 
 def render_markdown(markdown_content: str) -> str:
     md = MarkdownIt(
-        "commonmark",
+        "gfm-like",
         {
             "highlight": highlight_code,
         },

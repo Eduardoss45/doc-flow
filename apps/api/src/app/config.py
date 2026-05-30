@@ -24,6 +24,9 @@ class Config:
     MAX_MARKDOWN_IMAGES = int(os.getenv("MAX_MARKDOWN_IMAGES", 20))
     MAX_RENDERED_HTML_SIZE = int(os.getenv("MAX_RENDERED_HTML_SIZE", 5 * 1024 * 1024))
     MAX_HTML_NODES = int(os.getenv("MAX_HTML_NODES", 50000))
+    MARKDOWN_PDF_DEBUG_HTML = (
+        os.getenv("MARKDOWN_PDF_DEBUG_HTML", "false").lower() == "true"
+    )
 
 
 config = Config()
