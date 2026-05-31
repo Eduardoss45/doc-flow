@@ -4,60 +4,75 @@ import tempfile
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+
 from app.config import config
 
 
-def download_asset_to_temp_file(url: str, temp_dir: Path) -> tuple[Path, str] | None:
-    with requests.get(url, stream=True, timeout=5, allow_redirects=False) as response:
-        response.raise_for_status()
+def download_asset_to_temp_file(
+    url: str,
+    temp_dir: Path,
+) -> tuple[Path, str] | None:
+    try:
+        with requests.get(
+            url,
+            stream=True,
+            timeout=5,
+            allow_redirects=False,
+        ) as response:
+            response.raise_for_status()
 
-        content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
+            content_type = (
+                response.headers.get("Content-Type", "").split(";")[0].lower()
+            )
 
-        if content_type not in config.ALLOWED_IMAGE_TYPES:
-            return None
-
-        content_length = response.headers.get("Content-Length")
-
-        if content_length:
-            try:
-                content_length_value = int(content_length)
-
-            except ValueError:
+            if content_type not in config.ALLOWED_IMAGE_TYPES:
                 return None
 
-            if content_length_value > config.MAX_IMAGE_SIZE:
-                return None
+            content_length = response.headers.get("Content-Length")
 
-        suffix_by_type = {
-            "image/png": ".png",
-            "image/jpeg": ".jpg",
-            "image/webp": ".webp",
-            "image/gif": ".gif",
-        }
-
-        suffix = suffix_by_type.get(content_type, ".img")
-
-        temp_file = tempfile.NamedTemporaryFile(
-            dir=temp_dir,
-            suffix=suffix,
-            delete=False,
-        )
-
-        downloaded = 0
-
-        with temp_file:
-            for chunk in response.iter_content(chunk_size=64 * 1024):
-                if not chunk:
-                    continue
-
-                downloaded += len(chunk)
-
-                if downloaded > config.MAX_IMAGE_SIZE:
-                    Path(temp_file.name).unlink(missing_ok=True)
+            if content_length:
+                try:
+                    content_length_value = int(content_length)
+                except ValueError:
                     return None
 
-                temp_file.write(chunk)
-        return Path(temp_file.name), content_type
+                if content_length_value > config.MAX_IMAGE_SIZE:
+                    return None
+
+            suffix_by_type = {
+                "image/png": ".png",
+                "image/jpeg": ".jpg",
+                "image/webp": ".webp",
+                "image/gif": ".gif",
+            }
+
+            suffix = suffix_by_type.get(content_type, ".img")
+
+            temp_file = tempfile.NamedTemporaryFile(
+                dir=temp_dir,
+                suffix=suffix,
+                delete=False,
+            )
+
+            downloaded = 0
+
+            with temp_file:
+                for chunk in response.iter_content(chunk_size=64 * 1024):
+                    if not chunk:
+                        continue
+
+                    downloaded += len(chunk)
+
+                    if downloaded > config.MAX_IMAGE_SIZE:
+                        Path(temp_file.name).unlink(missing_ok=True)
+                        return None
+
+                    temp_file.write(chunk)
+
+            return Path(temp_file.name), content_type
+
+    except requests.RequestException:
+        return None
 
 
 def is_allowed_asset_url(url: str) -> bool:
@@ -74,7 +89,10 @@ def is_allowed_asset_url(url: str) -> bool:
     return hostname in config.ALLOWED_IMAGE_DOMAINS
 
 
-def process_assets(html: str, temp_dir: Path) -> str:
+def process_assets(
+    html: str,
+    temp_dir: Path,
+) -> str:
     soup = BeautifulSoup(html, "html.parser")
 
     for image in soup.find_all("img"):
@@ -84,13 +102,16 @@ def process_assets(html: str, temp_dir: Path) -> str:
             image.decompose()
             continue
 
-        download = download_asset_to_temp_file(src, temp_dir)
+        download = download_asset_to_temp_file(
+            src,
+            temp_dir,
+        )
 
         if not download:
             image.decompose()
             continue
 
-        local_path, content_type = download
+        local_path, _ = download
 
         image["src"] = local_path.resolve().as_uri()
 
