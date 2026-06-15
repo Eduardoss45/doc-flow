@@ -1,19 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  useFileConversion,
-  type ConversionType,
-  type ProcessedFile,
-} from '@/hooks/useFileConversion';
+import { useFileConversion } from '@/hooks/useFileConversion';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Upload,
@@ -29,30 +18,37 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ConversionType, ProcessedFile } from '@/types';
 
-export default function FileConverter() {
+type FileConverterProps = {
+  conversionType: ConversionType;
+  inputFormat: string;
+  outputFormat: string;
+};
+
+export default function FileConverter({
+  conversionType,
+  inputFormat,
+  outputFormat,
+}: FileConverterProps) {
   const {
     file,
     fileExtension,
-    conversionType,
-    setConversionType,
-    availableConversions,
     loading,
     error,
     handleFileChange,
     convert,
-    labels,
+    isValidFile,
     processedFiles,
     historyLoading,
     historyError,
     refreshHistory,
-  } = useFileConversion();
+  } = useFileConversion(conversionType);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const hasValidConversion = availableConversions.length > 0;
-  const canConvert = !!file && hasValidConversion && !loading;
+  const canConvert = !!file && isValidFile && !loading;
 
   const getDisplayFilename = (filename: string) => {
     const match = filename.match(
@@ -84,7 +80,7 @@ export default function FileConverter() {
           <CardHeader className="relative pb-6">
             <CardTitle className="text-2xl sm:text-3xl">Conversor de Arquivos</CardTitle>
             <CardDescription className="text-base">
-              Selecione o arquivo e o formato de destino desejado
+              Selecione o arquivo e envie para a conversao configurada nesta pagina
             </CardDescription>
 
             <Button
@@ -121,39 +117,26 @@ export default function FileConverter() {
                   </p>
                   <p className="text-sm mt-1">
                     {file
-                      ? `${(file.size / 1024 / 1024).toFixed(2)} MB • ${fileExtension?.toUpperCase()}`
-                      : 'Formatos suportados: CSV, XLSX, TXT, PDF, DOCX e mais'}
+                      ? `${(file.size / 1024 / 1024).toFixed(2)} MB - ${fileExtension?.toUpperCase()}`
+                      : `Formato esperado: ${inputFormat.toUpperCase()}`}
                   </p>
                 </div>
               </label>
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-medium block">Formato de saída</label>
+              <label className="text-sm font-medium block">Formato de saida</label>
 
-              {hasValidConversion ? (
-                <Select
-                  value={conversionType}
-                  onValueChange={v => setConversionType(v as ConversionType)}
-                  disabled={loading || !file}
-                >
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Selecione o formato desejado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableConversions.map(key => (
-                      <SelectItem key={key} value={key}>
-                        {labels[key]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
+              <div className="rounded-lg border p-4 bg-muted/40">
+                <span className="font-medium">Conversao:</span> {inputFormat.toUpperCase()} -&gt;{' '}
+                {outputFormat.toUpperCase()}
+              </div>
+
+              {file && !isValidFile && (
                 <div className="flex items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                   <AlertCircle className="h-5 w-5 shrink-0" />
-                  {fileExtension
-                    ? `Não há conversões disponíveis para arquivos .${fileExtension}`
-                    : 'Selecione um arquivo para ver as opções disponíveis'}
+                  Esta pagina nao aceita arquivos .{fileExtension}. Envie um arquivo{' '}
+                  {inputFormat.toUpperCase()}.
                 </div>
               )}
             </div>
@@ -197,7 +180,7 @@ export default function FileConverter() {
       >
         <div className="flex items-center justify-between p-5 border-b border-zinc-200 dark:border-zinc-800">
           {!isCollapsed && (
-            <h2 className="text-lg font-semibold tracking-tight">Histórico de Conversões</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Historico de Conversoes</h2>
           )}
 
           <div className="flex items-center gap-1">
@@ -248,15 +231,15 @@ export default function FileConverter() {
               <div className="flex items-start gap-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 p-4 mb-6 text-sm text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
                 <Clock className="h-5 w-5 mt-0.5 shrink-0" />
                 <p>
-                  Arquivos disponíveis por <strong>24 horas</strong>. Após isso são excluídos
+                  Arquivos disponiveis por <strong>24 horas</strong>. Apos isso sao excluidos
                   automaticamente.
                 </p>
               </div>
 
               {processedFiles.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <p className="font-medium mb-2">Nenhuma conversão recente</p>
-                  <p className="text-sm">Seus arquivos convertidos aparecerão aqui</p>
+                  <p className="font-medium mb-2">Nenhuma conversao recente</p>
+                  <p className="text-sm">Seus arquivos convertidos aparecerao aqui</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -301,13 +284,13 @@ export default function FileConverter() {
           ) : (
             <div className="flex flex-col items-center pt-10 text-muted-foreground/70">
               <Clock className="h-8 w-8 mb-3 opacity-60" />
-              <p className="text-xs font-medium">Histórico</p>
+              <p className="text-xs font-medium">Historico</p>
             </div>
           )}
         </div>
 
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-xs text-muted-foreground text-center">
-          {!isCollapsed && 'Armazenamento temporário • 24h'}
+          {!isCollapsed && 'Armazenamento temporario - 24h'}
         </div>
       </aside>
 

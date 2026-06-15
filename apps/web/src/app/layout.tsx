@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import { ClientWrapper } from '@/components/ClientWrapper';
-import EnsureClientId from '@/components/EnsureClientId';
 import './globals.css';
+import { Geist, Geist_Mono } from 'next/font/google';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -15,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Doc Flow',
-  description: 'Motor assíncrono de conversão de documentos',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  title: {
+    default: 'Doc Flow - Fast Online File Conversion',
+    template: '%s | Doc Flow',
+  },
+  description:
+    'Convert documents, spreadsheets, and Markdown files with an async conversion engine.',
 };
 
 export default function RootLayout({
@@ -26,10 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" data-lt-installed="true">
-      <EnsureClientId />
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClientWrapper>{children}</ClientWrapper>
-      </body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
     </html>
   );
 }

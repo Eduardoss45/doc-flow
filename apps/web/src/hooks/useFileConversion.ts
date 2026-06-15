@@ -3,16 +3,7 @@ import { convertFile } from '@/services/conversion';
 import { toast } from 'sonner';
 import { api } from '@/infra/api';
 import { ensureClientId } from '@/services/auth';
-
-export type ConversionType =
-  | 'csv_to_json'
-  | 'csv_to_xlsx'
-  | 'xlsx_to_csv'
-  | 'txt_to_pdf'
-  | 'pdf_to_text'
-  | 'docx_to_pdf'
-  | 'docx_to_markdown'
-  | 'markdown_to_pdf';
+import { ConversionType, ProcessedFile } from '@/types';
 
 const CONVERSION_LABELS: Record<ConversionType, string> = {
   csv_to_json: 'CSV → JSON',
@@ -25,30 +16,19 @@ const CONVERSION_LABELS: Record<ConversionType, string> = {
   markdown_to_pdf: 'Markdown → PDF',
 };
 
-const CONVERSIONS_BY_INPUT: Record<string, ConversionType[]> = {
-  csv: ['csv_to_json', 'csv_to_xlsx'],
-  xlsx: ['xlsx_to_csv'],
-  xls: ['xlsx_to_csv'],
-  txt: ['txt_to_pdf'],
-  pdf: ['pdf_to_text'],
-  docx: ['docx_to_pdf', 'docx_to_markdown'],
-  md: ['markdown_to_pdf'],
+const INPUT_BY_CONVERSION: Record<ConversionType, string> = {
+  csv_to_json: 'csv',
+  csv_to_xlsx: 'csv',
+  xlsx_to_csv: 'xlsx',
+  txt_to_pdf: 'txt',
+  pdf_to_text: 'pdf',
+  docx_to_pdf: 'docx',
+  docx_to_markdown: 'docx',
+  markdown_to_pdf: 'md',
 };
 
-const FALLBACK: ConversionType[] = [];
-
-export type ProcessedFile = {
-  filename: string;
-  extension: string | null;
-  size_bytes: number;
-  size_mb: number;
-  modified_at: string;
-  download_url: string;
-};
-
-export function useFileConversion() {
+export function useFileConversion(conversionType: ConversionType) {
   const [file, setFile] = useState<File | null>(null);
-  const [conversionType, setConversionType] = useState<ConversionType>('csv_to_json');
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,10 +41,12 @@ export function useFileConversion() {
     return file.name.split('.').pop()?.toLowerCase() ?? null;
   }, [file]);
 
-  const availableConversions = useMemo<ConversionType[]>(() => {
-    if (!fileExtension) return FALLBACK;
-    return CONVERSIONS_BY_INPUT[fileExtension] || FALLBACK;
-  }, [fileExtension]);
+  const isValidFile = useMemo(() => {
+    if (!fileExtension) return false;
+
+    return INPUT_BY_CONVERSION[conversionType] === fileExtension;
+  }, [fileExtension, conversionType]);
+
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
     setHistoryError(null);
@@ -112,17 +94,6 @@ export function useFileConversion() {
     }
   }, [loading, error, processedFiles.length, fetchHistory]);
 
-  useEffect(() => {
-    setResultUrl(null);
-    setError(null);
-
-    if (availableConversions.length === 0) {
-      setConversionType('csv_to_json' as ConversionType);
-    } else if (!availableConversions.includes(conversionType)) {
-      setConversionType(availableConversions[0]);
-    }
-  }, [file, availableConversions, conversionType]);
-
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) setFile(selected);
@@ -134,8 +105,8 @@ export function useFileConversion() {
       return;
     }
 
-    if (!availableConversions.includes(conversionType)) {
-      setError('Conversão não suportada para este tipo de arquivo');
+    if (!isValidFile) {
+      setError(`Esta página aceita apenas arquivos .${INPUT_BY_CONVERSION[conversionType]}`);
       return;
     }
 
@@ -152,20 +123,17 @@ export function useFileConversion() {
     }
 
     setLoading(false);
-  }, [file, conversionType, availableConversions]);
+  }, [file, conversionType, isValidFile]);
 
   return {
     file,
     fileExtension,
-    conversionType,
-    setConversionType,
-    availableConversions,
     loading,
+    isValidFile,
     error,
     resultUrl,
     handleFileChange,
     convert,
-    labels: CONVERSION_LABELS,
     processedFiles,
     historyLoading,
     historyError,
