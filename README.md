@@ -1,562 +1,134 @@
 # 📌 Doc Flow – Motor Assíncrono de Conversão de Documentos
 
-O **Doc Flow** é um backend para **processamento e conversão assíncrona de documentos**, estruturado como **monólito modular orientado a mensageria**, com comunicação desacoplada entre API e workers e notificações em tempo real via WebSocket.
+O **Doc Flow** é um sistema SaaS de **processamento e conversão assíncrona de documentos**, estruturado como um backend orientado a mensageria, com comunicação desacoplada entre API e workers, processamento distribuído e notificações em tempo real via WebSocket.
+
+O projeto mantém seu objetivo original de fornecer um motor técnico de conversão previsível e observável, agora evoluído com uma camada SaaS e novos recursos de renderização avançada.
 
 O foco do projeto é demonstrar:
 
-- Separação rigorosa de responsabilidades
-- Processamento assíncrono correto
-- Isolamento por cliente sem autenticação
-- Controle explícito de recursos
-- Efemeridade como regra arquitetural
+* Separação rigorosa de responsabilidades
+* Processamento assíncrono correto
+* Isolamento por cliente sem autenticação
+* Controle explícito de recursos
+* Efemeridade como regra arquitetural
+* Pipeline seguro de conversão
+* Preparação para operação em produção
 
 O sistema não é uma plataforma de gestão documental.
-É um **motor técnico de conversão previsível e observável**.
+
+É um **motor SaaS de conversão de documentos com processamento assíncrono, isolamento de recursos e execução controlada**.
 
 ---
 
-## ⚠️ Disclaimer Importante – Variáveis de Ambiente (`.env`)
+# 🔄 Evolução do Pipeline de Conversão
 
-> O funcionamento do sistema depende obrigatoriamente da configuração correta do arquivo `.env`.
+O sistema mantém todos os pipelines de conversão existentes, incluindo:
 
-Antes de executar localmente:
+* CSV ↔ Excel ↔ JSON
+* Markdown ↔ HTML ↔ TXT
+* TXT → PDF
+* PDF → TXT
+* DOCX / PPTX → PDF / Markdown
 
-1. Criar o `.env` a partir do `.env.example`
-2. Garantir o preenchimento correto de todas as variáveis
+Como evolução do projeto, foi adicionado um novo pipeline especializado para:
 
-Itens críticos:
+## Markdown → PDF
 
-- URL do **PostgreSQL**
-- URL do **Redis**
-- URL do **RabbitMQ**
-- Diretórios de storage
-- Configuração de CORS (`ALLOWED_ORIGINS`)
-- Configuração do Socket.IO
-- Limites de upload e TTL
+Utilizando **Chromium como engine de renderização**, permitindo maior fidelidade visual através de uma etapa intermediária baseada em HTML.
 
-Falhas comuns decorrentes de má configuração:
-
-- Workers não processam jobs
-- Eventos não chegam via WebSocket
-- Erros silenciosos de conexão
-- Rate limit não funcional
-- Falhas na persistência
-
----
-
-## 🧱 Visão Geral da Arquitetura
+Fluxo:
 
 ```
-Frontend (Next.js)
-        │
-        │ HTTP + WebSocket
-        ▼
-Flask API + Socket.IO
-        │
-        ├── PostgreSQL (estado dos jobs)
-        │
-        ├── RabbitMQ (fila de tarefas)
-        │
-        └── Redis (pub/sub + cache)
-                    │
-                    ▼
-              Celery Workers
-                    │
-                    ▼
-                Storage Local
+Markdown
+   │
+   ▼
+Conversão para HTML
+   │
+   ▼
+Renderização Chromium
+   │
+   ▼
+PDF final
 ```
 
-### Tecnologias Principais
+Esse novo pipeline permite:
 
-- Flask
-- Celery
-- RabbitMQ
-- Redis
-- PostgreSQL
-- Docker
+* Suporte a CSS moderno
+* Melhor controle de layout
+* Renderização semelhante a navegadores reais
+* Maior qualidade visual dos documentos gerados
 
 ---
 
-## 🔐 Modelo de Segurança
+# 🔐 Proteções do Pipeline Chromium
 
-O sistema **não possui autenticação**.
+A renderização utilizando Chromium adiciona uma camada de processamento mais pesada, por isso foi implementado isolamento e controle para evitar impacto no restante da aplicação.
 
-O isolamento é feito exclusivamente por:
+Proteções:
 
-- `client_id` (UUID v4)
-- Cookie HTTP-only
-- Validação de correspondência no download
-- Isolamento físico de diretórios
-- Limite de armazenamento por cliente
-- Expiração automática
+* Execução isolada do processo
+* Controle de tempo de execução
+* Limitação de recursos
+* Validação de entrada
+* Separação entre API e processamento pesado
 
-### Rate Limiting
-
-- 10 requisições por segundo por IP
-- Implementado na camada HTTP
-
-### Garantias
-
-- Não há enumeração de jobs
-- UUID evita previsibilidade
-- Downloads exigem correspondência de `client_id`
+O objetivo é manter a previsibilidade operacional mesmo com tarefas de maior custo computacional.
 
 ---
 
-## 📦 Domínio de Processamento
+# 🌐 Evolução do Frontend
 
-### Estados de Job
+O frontend foi otimizado para suportar o crescimento como SaaS, mantendo as funcionalidades existentes e adicionando melhorias de aquisição e monetização.
 
-- `PENDING`
-- `PROCESSING`
-- `DONE`
-- `FAILED`
+Melhorias:
 
-### Estrutura Persistida
+## SEO
 
-Tabela `DocumentJob`:
+* Melhor estrutura de páginas
+* Otimização de metadata
+* Melhor indexação
+* Melhor desempenho de carregamento
 
-- `id (UUID)`
-- `client_id`
-- `status`
-- `input_filename`
-- `input_path`
-- `output_format`
-- `output_path`
-- `error_message`
-- `created_at`
-- `processed_at`
-- `expires_at`
+## Monetização
 
-O banco representa apenas o ciclo de vida técnico.
+Preparação da interface para utilização de anúncios:
+
+* Espaços publicitários
+* Estrutura compatível com monetização
+* Preservação da experiência do usuário
 
 ---
 
-## 🔁 Fluxo Assíncrono
+# 🐳 Próximos Passos
 
-1. Upload via API
-2. Arquivo salvo em `/storage/input/{client_id}`
-3. Job persistido no banco
-4. Metadados enviados ao RabbitMQ
-5. Worker processa
-6. Output movido para `/storage/output/{client_id}`
-7. Status atualizado
-8. Evento publicado no Redis
-9. API emite evento via WebSocket
+## Otimização dos Builds Docker
 
-### Regra Estrutural
+Antes do deploy produtivo, será realizada a otimização das imagens Docker.
 
-> Arquivos nunca trafegam pela fila.
+Objetivos:
 
-A fila transporta apenas metadados.
+* Reduzir tamanho das imagens
+* Melhorar tempo de build
+* Diminuir tempo de deploy
+* Remover dependências desnecessárias
+* Melhor separar responsabilidades dos containers
 
----
+Possíveis melhorias:
 
-## 🔔 Notificações em Tempo Real
-
-- Workers publicam eventos no Redis
-- API consome via pub/sub
-- Emissão via Socket.IO para `room(client_id)`
-
-Eventos:
-
-- `job_processing`
-- `job_done`
-- `job_failed`
-
-Sem polling contínuo.
+* Multi-stage builds
+* Imagens base menores
+* Separação runtime/build
+* Cache eficiente de camadas
+* Containers específicos para serviços pesados
 
 ---
 
-## 🗃️ Estratégia de Armazenamento
-
-Estrutura física:
-
-```
-/storage/input/{client_id}
-/storage/output/{client_id}
-```
-
-### Limites
-
-- 250 MB por `client_id`
-- Soma de input + output
-- Upload bloqueado quando limite atingido
-
-### Expiração
-
-- TTL padrão: 24h
-- Tarefa periódica remove:
-  - Registros
-  - Arquivos físicos
-  - Libera cota
-
-Efemeridade é comportamento padrão.
-
----
-
-## 🔄 Conversões Suportadas
-
-### Dados tabulares
-
-- CSV ↔ Excel ↔ JSON
-- `pandas`
-
-### Texto estruturado
-
-- Markdown ↔ HTML ↔ TXT
-- `markdown`, `markitdown`
-
-### TXT → PDF
-
-- `ReportLab`, `fpdf`
-
-### PDF → TXT
-
-- `pdfplumber`, `PyPDF2`, `tika`
-
-### Office → visão
-
-- DOCX / PPTX → PDF / Markdown
-- `python-docx`, `docling`
-
-Conversões dependentes de layout visual complexo não fazem parte do escopo.
-
----
-
-## 🐳 Infraestrutura & Docker
-
-O projeto é totalmente containerizado utilizando **Docker** e orquestrado via **Docker Compose**, garantindo:
-
-- Isolamento de dependências
-- Reprodutibilidade do ambiente
-- Inicialização previsível
-- Execução uniforme entre ambientes
-
-Todos os serviços são executados como containers independentes, comunicando-se exclusivamente via rede interna do Docker.
-
----
-
-### Serviços Orquestrados
-
-O `docker-compose.yml` define os seguintes serviços:
-
-- **Frontend (Next.js)**
-- **API (Flask + Socket.IO)**
-- **Worker (Celery)**
-- **Celery Beat**
-- **PostgreSQL**
-- **Redis**
-- **RabbitMQ**
-
-Arquiteturalmente:
-
-- A **API** é responsável pelo HTTP e WebSocket.
-- O **Worker** executa tarefas assíncronas.
-- O **Beat** agenda tarefas periódicas (ex.: expiração de arquivos).
-- O **RabbitMQ** atua como broker.
-- O **Redis** é utilizado para pub/sub e backend de resultados.
-- O **PostgreSQL** mantém o estado dos jobs.
-
-Todos os serviços compartilham a mesma rede Docker interna.
-
----
-
-### Execução com Docker
-
-Para subir todo o ambiente:
-
-```bash
-docker compose up --build
-```
-
-Esse comando:
-
-- Constrói as imagens necessárias
-- Cria a rede interna
-- Inicializa todos os containers
-- Conecta automaticamente os serviços pelos nomes definidos no compose
-
-Após inicialização:
-
-- API disponível em `http://localhost:4000`
-- Swagger disponível em `http://localhost:4000/docs/swagger`
-- Frontend disponível em `http://localhost:3000`
-
----
-
-### Comunicação Interna
-
-A comunicação entre serviços ocorre exclusivamente via hostname interno do Docker:
-
-- `postgres`
-- `redis`
-- `rabbitmq`
-- `api`
-- `worker`
-
-Exemplo de URL interna válida:
-
-```
-amqp://guest:guest@rabbitmq:5672
-redis://redis:6379/0
-postgresql+psycopg://user:pass@postgres:5432/db
-```
-
-Não há dependência de `localhost` dentro dos containers.
-
----
-
-### Health Checks & Dependências
-
-Os serviços utilizam:
-
-- `depends_on`
-- Inicialização controlada por ordem lógica
-
-No entanto:
-
-> A disponibilidade real é garantida por retry interno (ex.: Celery e SQLAlchemy), não apenas por dependência declarativa.
-
-Isso evita falhas prematuras caso algum serviço ainda esteja inicializando.
-
----
-
-### Persistência de Dados
-
-Volumes são utilizados para:
-
-- Persistência do PostgreSQL
-- Persistência do RabbitMQ
-- Diretório `/storage` (input/output de arquivos)
-
-Isso garante que:
-
-- Jobs não sejam perdidos em restart
-- Arquivos persistam até expiração
-- Broker mantenha estado de filas
-
----
-
-### Observações Operacionais
-
-- Alterações em código exigem rebuild (`--build`)
-- Alterações apenas no `docker-compose.yml` não exigem rebuild
-- Containers são stateless (exceto serviços com volume)
-
-Logs podem ser inspecionados via:
-
-```bash
-docker compose logs -f
-```
-
-Ou por serviço específico:
-
-```bash
-docker compose logs -f worker
-```
-
----
-
-## 🗄️ Banco de Dados & Migrations (Docker)
-
-- **SQLAlchemy 2.0**
-- **Alembic**
-- `synchronize` não utilizado
-- Migrations explícitas e versionadas
-
-As migrations podem ser executadas manualmente dentro do container da API:
-
-```bash
-docker compose exec api alembic upgrade head
-```
-
-O banco é único, com separação lógica por domínio.
-
----
-
-## ▶️ Execução Local (Ambiente Containerizado)
-
-Pré-requisitos:
-
-- Docker
-- Docker Compose
-- Arquivo `.env` configurado corretamente
-
-Subida do ambiente:
-
-```bash
-docker compose up --build
-```
-
-Parada:
-
-```bash
-docker compose down
-```
-
-Parada removendo volumes:
-
-```bash
-docker compose down -v
-```
-
----
-
-## 📑 Documentação da API (Swagger)
-
-A API está documentada via:
-
-- flask-smorest
-- marshmallow
-- Swagger UI
-
-### Acesso
-
-```
-http://localhost:4000/docs/swagger
-```
-
-### O que está documentado
-
-- Todas as rotas HTTP
-- Schemas de request/response
-- Parâmetros de rota
-- Status codes
-- Validações
-
-O Swagger representa o contrato real da API.
-
-Não documenta eventos internos de mensageria.
-
----
-
-## 🐳 Infraestrutura & Docker
-
-Serviços orquestrados via Docker Compose:
-
-- Web
-- API
-- Worker
-- Celery Beat
-- PostgreSQL
-- Redis
-- RabbitMQ
-
-Execução:
-
-```bash
-docker compose up --build
-```
-
----
-
-## 🗄️ Banco de Dados & Migrations
-
-- SQLAlchemy 2.0
-- Alembic
-- `synchronize` não utilizado
-- Migrations explícitas
-
-Banco único com separação lógica por domínio.
-
----
-
-## ▶️ Execução Local
-
-> backend
-
-```bash
-poetry install
-poetry run start-api
-poetry run start-worker
-poetry run celery -A src.app.workers.celery_app beat --loglevel=info
-```
-
-> frontend
-
-```bash
-npm run dev
-```
-
-Pré-requisitos:
-
-- Python 3.11+
-- PostgreSQL
-- Redis
-- RabbitMQ
-- `.env` configurado
-
----
-
-## 🧠 Decisões Técnicas
-
-- Monólito modular (evita complexidade prematura)
-- Mensageria para desacoplamento
-- UUID para evitar enumeração
-- TTL obrigatório
-- Storage isolado por cliente
-- WebSocket fora do fluxo HTTP
-- Arquivos fora da fila
-
----
-
-## ⚠️ Trade-offs
-
-- Sem autenticação (decisão consciente)
-- Limite rígido de 250 MB
-- Conversões complexas fora do escopo
-- Observabilidade básica (logging estruturado)
-
----
-
-## 🚀 Melhorias Futuras
-
-- Retry + DLQ no RabbitMQ
-- Cache Redis para consultas frequentes
-- Observabilidade avançada (OpenTelemetry)
-- Testes E2E
-- Storage externo (S3-compatible)
-- Métricas Prometheus
-
----
-
-## 🎯 Objetivo do Projeto
-
-Demonstrar como um sistema real de processamento de documentos deve ser estruturado para:
-
-- Escalar horizontalmente
-- Controlar recursos
-- Evitar acoplamento
-- Manter previsibilidade operacional
-- Operar com efemeridade como padrão
-
-O foco é engenharia sólida, não expansão indiscriminada de funcionalidades.
-
----
-
-## UPGRADE — Observabilidade e Isolamento de Serviços
-
-[ ] Separar API HTTP do worker Chromium/render
-[ ] Criar imagem Docker dedicada para renderização
-[ ] Remover dependências desnecessárias entre serviços
-[ ] Isolar scheduler/beat em container próprio
-[ ] Implementar agente central de auditoria/logs
-[ ] Centralizar:
-    - errors
-    - warnings
-    - eventos críticos
-    - métricas básicas
-    - falhas de jobs
-[ ] Adicionar alertas por email para falhas críticas
-[ ] Criar sistema de download autorizado de logs
-[ ] Adicionar retenção/rotação de logs
-[ ] Mapear consumo de memória/CPU por worker
-[ ] Adicionar correlation-id/job-id entre serviços
-[ ] Avaliar tracing distribuído no futuro
-[ ] Reduzir tamanho das imagens Docker por função
-[ ] Revisar boundaries entre:
-    - API
-    - workers
-    - scheduler
-    - auditoria
+# 🚀 Deploy em Produção
+
+Após a otimização dos builds:
+
+* Publicação da aplicação
+* Configuração do ambiente produtivo
+* Validação do pipeline completo
+* Monitoramento inicial
+* Ajustes operacionais
