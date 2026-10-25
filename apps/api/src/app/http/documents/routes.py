@@ -1,7 +1,5 @@
 from flask import (
-    Blueprint,
     request,
-    jsonify,
     send_from_directory,
     current_app,
     g,
@@ -13,7 +11,7 @@ from pathlib import Path
 from uuid import UUID
 from datetime import datetime, timezone
 from .schemas import UploadFormSchema, JobCreatedSchema, FileListSchema, FileItemSchema
-from app.infra.utils import get_client_output_dir, get_client_input_dir
+from app.infra.utils import get_client_output_dir
 from app.domain.enums.conversion_type import ConversionType
 from app.services.document_service import DocumentService
 
@@ -78,9 +76,11 @@ def upload_and_convert(conversion_data):
     file.save(job.input_path)
     service.job_repo.update(job)
 
-    from app.workers.tasks.conversion_worker import process_conversion
-
-    process_conversion.delay(str(job.id), str(client_id))
+    celery = current_app.extensions["celery"]
+    celery.send_task(
+        "process_conversion",
+        args=[str(job.id), str(client_id)],
+    )
 
     return {
         "job_id": str(job.id),
@@ -101,10 +101,6 @@ def list_user_files():
         client_id = UUID(client_id_str)
     except ValueError:
         abort(400, messages={"cookie": "client_id inválido"})
-
-    storage_repo = g.storage_repository
-
-    storage = storage_repo.get_by_client_id(client_id)
 
     output_dir: Path = get_client_output_dir(client_id)
     files_list = []

@@ -1,7 +1,5 @@
 from celery import shared_task
-from pathlib import Path
-from datetime import datetime, timedelta
-from uuid import UUID
+from datetime import datetime
 from app.infra.db.db import SessionLocal
 from app.repositories.client_storage_repository import ClientStorageRepository
 from app.infra.models.client_storage_model import ClientStorageModel
