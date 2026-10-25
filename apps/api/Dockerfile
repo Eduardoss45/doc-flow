@@ -12,14 +12,14 @@ RUN pip install --upgrade pip \
     && poetry config virtualenvs.create false
 
 COPY apps/api/pyproject.toml apps/api/poetry.lock ./
-RUN poetry install --no-root --only main
-
-COPY apps/api/src ./src
 
 FROM base AS api
 
-EXPOSE 4000
+RUN poetry install --no-root --only main,api
 
+COPY apps/api/src ./src
+
+EXPOSE 4000
 CMD ["poetry", "run", "start-api"]
 
 FROM base AS worker
@@ -64,10 +64,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN poetry install --no-root --only main,worker
+
+COPY apps/api/src ./src
+
 RUN python -m playwright install chromium
 
 CMD ["poetry", "run", "start-worker"]
 
 FROM base AS beat
+
+RUN poetry install --no-root --only main
+
+COPY apps/api/src ./src
 
 CMD ["poetry", "run", "celery", "-A", "src.app.workers.celery_app", "beat", "--loglevel=info"]
