@@ -1,14 +1,30 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 WORKDIR /app
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/src \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+RUN pip install --upgrade pip \
+    && pip install poetry \
+    && poetry config virtualenvs.create false
+
+COPY apps/api/pyproject.toml apps/api/poetry.lock ./
+RUN poetry install --no-root --only main
+
+COPY apps/api/src ./src
+
+FROM base AS api
+
+EXPOSE 4000
+
+CMD ["poetry", "run", "start-api"]
+
+FROM base AS worker
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    \
-    # LibreOffice
     libreoffice-core-nogui \
     libreoffice-writer-nogui \
     libreoffice-calc-nogui \
@@ -16,8 +32,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-draw-nogui \
     libreoffice-math-nogui \
     default-jre-headless \
-    \
-    # Chromium / Playwright deps
     wget \
     curl \
     ca-certificates \
@@ -42,31 +56,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libatspi2.0-0 \
     libgtk-3-0 \
-    \
-    # Fonts
     fonts-liberation \
     fonts-dejavu \
     fonts-noto \
     fonts-noto-cjk \
     fonts-noto-color-emoji \
-    \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade pip
-RUN pip install poetry
-
-RUN poetry config virtualenvs.create false
-
-COPY apps/api/pyproject.toml apps/api/poetry.lock ./
-
-RUN poetry install --no-root --only main
-
-COPY apps/api/src ./src
-
-# instala chromium do playwright
 RUN python -m playwright install chromium
 
-EXPOSE 4000
+CMD ["poetry", "run", "start-worker"]
 
-ENV PYTHONPATH=/app/src
+FROM base AS beat
+
+CMD ["poetry", "run", "celery", "-A", "src.app.workers.celery_app", "beat", "--loglevel=info"]

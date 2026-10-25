@@ -1,21 +1,19 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "2009"
+      POSTGRES_PASSWORD: '2009'
       POSTGRES_DB: df_document_processor_db
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres-init/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5000:5432"
+      - '5000:5432'
     networks:
       - appnet
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,15 +25,15 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - '5672:5672'
+      - '15672:15672'
     networks:
       - appnet
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq/mnesia
       - rabbitmq_log:/var/log/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
       interval: 5s
       timeout: 5s
       retries: 30
@@ -44,11 +42,11 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     networks:
       - appnet
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -58,6 +56,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      target: api
     command: poetry run start-api
     environment:
       HOST: 0.0.0.0
@@ -70,7 +69,7 @@ services:
     volumes:
       - storage:/app/src/app/infra/storage
     ports:
-      - "4000:4000"
+      - '4000:4000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,13 +84,13 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      target: beat
     command: poetry run celery -A src.app.workers.celery_app beat --loglevel=info
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:2009@postgres:5432/df_document_processor_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_URL: redis://redis:6379/0
       TIMEZONE: America/Sao_Paulo
-      ALLOWED_ORIGINS: http://localhost:3000
     volumes:
       - storage:/app/src/app/infra/storage
     depends_on:
@@ -110,8 +109,9 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      target: worker
     command: poetry run start-worker
-    shm_size: "1gb"
+    shm_size: '1gb'
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:2009@postgres:5432/df_document_processor_db
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
@@ -119,13 +119,13 @@ services:
       TIMEZONE: America/Sao_Paulo
       ALLOWED_IMAGE_DOMAINS: raw.githubusercontent.com,githubusercontent.com,cdn.jsdelivr.net,images.unsplash.com
       ALLOWED_IMAGE_TYPES: image/png,image/jpeg,image/webp,image/gif
-      MAX_IMAGE_SIZE: "5242880"
-      MAX_MARKDOWN_SIZE: "5242880"
-      MAX_MARKDOWN_LINES: "20000"
-      MAX_MARKDOWN_IMAGES: "20"
-      MAX_RENDERED_HTML_SIZE: "5242880"
-      MAX_HTML_NODES: "50000"
-      MARKDOWN_PDF_DEBUG_HTML: "true"
+      MAX_IMAGE_SIZE: '5242880'
+      MAX_MARKDOWN_SIZE: '5242880'
+      MAX_MARKDOWN_LINES: '20000'
+      MAX_MARKDOWN_IMAGES: '20'
+      MAX_RENDERED_HTML_SIZE: '5242880'
+      MAX_HTML_NODES: '50000'
+      MARKDOWN_PDF_DEBUG_HTML: 'true'
     volumes:
       - storage:/app/src/app/infra/storage
     depends_on:
@@ -146,7 +146,7 @@ services:
         NEXT_PUBLIC_API_URL: http://localhost:4000
     command: npm run start
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - backend
     networks:
