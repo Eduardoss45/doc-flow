@@ -70,6 +70,18 @@ services:
       - storage:/app/src/app/infra/storage
     ports:
       - '4000:4000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -147,8 +159,15 @@ services:
     command: npm run start
     ports:
       - '3000:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - appnet
 

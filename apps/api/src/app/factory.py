@@ -107,4 +107,11 @@ def create_app() -> Flask:
     api.register_blueprint(documents_bp)
     api.register_blueprint(auth_bp)
 
+    @app.get("/health")
+    def health():
+        return {
+            "status": "ok",
+            "service": "api",
+        }, 200
+    
     return app
