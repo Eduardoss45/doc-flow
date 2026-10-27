@@ -4,7 +4,7 @@ from app.config import config
 socketio = SocketIO(
     cors_allowed_origins=config.ALLOWED_ORIGINS or "*",
     manage_session=False,
-    async_mode="threading",
+    async_mode="eventlet",
     logger=True,
     engineio_logger=True,
 )

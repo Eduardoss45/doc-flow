@@ -69,6 +69,7 @@ def create_app() -> Flask:
         retry_after=True,
     )
 
+
     @app.errorhandler(429)
     def ratelimit_handler(e):
         return (
@@ -114,4 +115,6 @@ def create_app() -> Flask:
             "service": "api",
         }, 200
     
+    limiter.exempt(health)
+
     return app

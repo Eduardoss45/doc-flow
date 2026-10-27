@@ -57,7 +57,21 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       target: api
-    command: poetry run start-api
+    command:
+      [
+        'poetry',
+        'run',
+        'gunicorn',
+        '--worker-class',
+        'eventlet',
+        '-w',
+        '1',
+        '--bind',
+        '0.0.0.0:4000',
+        '--timeout',
+        '120',
+        'src.app.entrypoints.wsgi:app',
+      ]
     environment:
       HOST: 0.0.0.0
       PORT: 4000
