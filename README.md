@@ -136,3 +136,16 @@ Essas instruções são destinadas ao ambiente local de desenvolvimento. Não re
 A base de runtime está preparada com imagens especializadas por processo, configuração por variáveis de ambiente, healthcheck, Gunicorn e execução dos containers da aplicação sem privilégios de root.
 
 **O serviço ainda não foi publicado.** Antes de uma operação real, ainda será necessário configurar a hospedagem, os secrets do provedor, HTTPS e monitoramento, além de validar o comportamento no ambiente de destino.
+
+---
+
+# 📄 Licença
+
+Este repositório usa uma licença **source-available** (não é open source OSI).
+
+Em resumo:
+
+* É permitido ver, estudar e rodar o código para uso pessoal, educacional ou avaliação interna
+* **Não** é permitido usar o software para oferecer um serviço competidor de conversão/processamento de documentos (hospedado ou gerenciado), gratuito ou pago, sem licença comercial separada
+
+O texto completo está em [`LICENSE.md`](./LICENSE.md).
