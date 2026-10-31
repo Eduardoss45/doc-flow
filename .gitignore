@@ -1,4 +1,45 @@
+# Env / secrets
 .env
 .env.local
 *.env
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Celery Beat (estado de runtime — nunca versionar)
+celerybeat-schedule*
+**/celerybeat-schedule*
+
+# Node / Next
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs / local
+*.log
+logs/

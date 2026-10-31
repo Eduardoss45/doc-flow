@@ -121,7 +121,7 @@ services:
       - storage:/app/src/app/infra/storage
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_healthy
       rabbitmq:
@@ -138,6 +138,8 @@ services:
       target: worker
     command: poetry run start-worker
     shm_size: '1gb'
+    mem_limit: 2g
+    cpus: 1.0
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
@@ -156,7 +158,7 @@ services:
       - storage:/app/src/app/infra/storage
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       redis:

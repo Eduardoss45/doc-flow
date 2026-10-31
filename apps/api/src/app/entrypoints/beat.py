@@ -1,6 +1,6 @@
 import sys
 from celery.bin.beat import beat
-from workers.celery_app import celery
+from app.workers.celery_app import celery
 from app.config import config
 
 
