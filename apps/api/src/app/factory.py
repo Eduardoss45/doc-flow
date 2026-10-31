@@ -50,7 +50,7 @@ def create_app() -> Flask:
         app,
         resources={
             r"/*": {
-                "origins": [config.ALLOWED_ORIGINS],
+                "origins": config.ALLOWED_ORIGINS,
                 "supports_credentials": True,
                 "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
                 "expose_headers": ["Set-Cookie"],
@@ -68,7 +68,6 @@ def create_app() -> Flask:
         headers_enabled=True,
         retry_after=True,
     )
-
 
     @app.errorhandler(429)
     def ratelimit_handler(e):
@@ -114,7 +113,7 @@ def create_app() -> Flask:
             "status": "ok",
             "service": "api",
         }, 200
-    
+
     limiter.exempt(health)
 
     return app
