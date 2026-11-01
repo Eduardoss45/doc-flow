@@ -4,6 +4,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_smorest import Api
 from marshmallow import ValidationError
+from sqlalchemy import text
 
 from app.config import config
 from app.realtime.server import socketio, init_socketio
@@ -115,5 +116,30 @@ def create_app() -> Flask:
         }, 200
 
     limiter.exempt(health)
+
+    @app.get("/health/ready")
+    def health_ready():
+        checks = {}
+
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception as e:
+            checks["database"] = f"error: {e}"
+            return {"status": "not_ready", "checks": checks}, 503
+
+        try:
+            from app.infra.redis.client import get_redis_client
+
+            get_redis_client().ping()
+            checks["redis"] = "ok"
+        except Exception as e:
+            checks["redis"] = f"error: {e}"
+            return {"status": "not_ready", "checks": checks}, 503
+
+        return {"status": "ready", "checks": checks}, 200
+
+    limiter.exempt(health_ready)
 
     return app

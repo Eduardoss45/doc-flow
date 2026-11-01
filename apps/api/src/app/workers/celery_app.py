@@ -22,6 +22,6 @@ celery.conf.update(
 celery.conf.beat_schedule = {
     "cleanup-expired-job": {
         "task": "app.workers.tasks.cleanup_old_files.cleanup_expired_files",
-        "schedule": crontab(minute="*/1"),
+        "schedule": crontab(minute="*/10"),
     },
 }
