@@ -6,9 +6,7 @@ from app.infra.db.db import SessionLocal
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.client_storage_repository import ClientStorageRepository
 from app.domain.enums.conversion_type import ConversionType
-from app.domain.entities.document_job import DocumentJob
 from app.infra.utils import (
-    get_client_input_dir,
     get_client_output_dir,
     get_directory_size,
 )

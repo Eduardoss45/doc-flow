@@ -10,7 +10,7 @@ from werkzeug.datastructures import FileStorage
 from pathlib import Path
 from uuid import UUID
 from datetime import datetime, timezone
-from .schemas import UploadFormSchema, JobCreatedSchema, FileListSchema, FileItemSchema
+from .schemas import UploadFormSchema, JobCreatedSchema, FileListSchema
 from app.infra.utils import get_client_output_dir
 from app.domain.enums.conversion_type import ConversionType
 from app.services.document_service import DocumentService
