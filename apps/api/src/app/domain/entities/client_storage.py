@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
-from uuid import UUID, uuid4
-from pathlib import Path
+from uuid import UUID
 from typing import Optional
 
 
