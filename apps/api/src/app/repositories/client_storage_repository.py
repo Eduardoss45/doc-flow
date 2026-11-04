@@ -3,7 +3,6 @@ from uuid import UUID
 from datetime import datetime, timezone
 from app.domain.entities.client_storage import ClientStorage
 from app.infra.models.client_storage_model import ClientStorageModel
-from app.infra.utils import get_directory_size, get_client_output_dir
 
 
 class ClientStorageRepository:

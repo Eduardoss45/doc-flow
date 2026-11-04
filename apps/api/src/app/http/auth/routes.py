@@ -1,5 +1,5 @@
-from flask import Blueprint, request, make_response
-from flask_smorest import Blueprint as ApiBlueprint, abort
+from flask import request, make_response
+from flask_smorest import Blueprint as ApiBlueprint
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from .schemas import ClientIdResponseSchema

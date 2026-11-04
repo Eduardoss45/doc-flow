@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, DateTime
+from sqlalchemy import Column, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from app.infra.db.db import Base
 import uuid
