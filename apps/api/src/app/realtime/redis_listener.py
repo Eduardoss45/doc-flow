@@ -39,10 +39,6 @@ def start_redis_listener():
                     else:
                         continue
 
-                    print(
-                        f"[Redis Listener] Emitido {event_type} para room {client_id}"
-                    )
-
                 except json.JSONDecodeError:
                     print(f"[Redis Listener] JSON inválido: {message.get('data')}")
                 except Exception as e:

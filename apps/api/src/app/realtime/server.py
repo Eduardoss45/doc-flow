@@ -32,7 +32,6 @@ def handle_connect(auth=None):
 
     join_room(client_id)
     emit("connected", {"message": "Conectado", "client_id": client_id})
-    print(f"[Socket] Client conectado: {client_id}")
 
 
 @socketio.on("disconnect")
@@ -40,4 +39,3 @@ def handle_disconnect():
     client_id = request.cookies.get("client_id")
     if client_id:
         leave_room(client_id)
-        print(f"[Socket] Client desconectado: {client_id}")

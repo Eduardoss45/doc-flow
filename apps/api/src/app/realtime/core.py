@@ -5,6 +5,6 @@ socketio = SocketIO(
     cors_allowed_origins=config.ALLOWED_ORIGINS or ["*"],
     manage_session=False,
     async_mode="eventlet",
-    logger=True,
-    engineio_logger=True,
+    logger=False,
+    engineio_logger=False,
 )

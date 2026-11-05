@@ -12,7 +12,6 @@ from app.infra.utils import (
 )
 from app.infra.redis.redis_pub import publish_job_event
 
-
 CONVERTERS = {
     ConversionType.CSV_TO_JSON: "csv_to_json.convert",
     ConversionType.CSV_TO_XLSX: "csv_to_xlsx.convert",
@@ -58,7 +57,7 @@ def process_conversion(job_id: str, client_id: str):
         convert_func(str(input_path), str(output_path))
 
         job.mark_completed(str(output_path))
-        print("Passou")
+
         publish_job_event(
             "job_completed",
             {
