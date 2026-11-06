@@ -20,9 +20,9 @@ COPY apps/api/pyproject.toml apps/api/poetry.lock ./
 
 FROM base AS api
 
-RUN poetry install --no-root --only main,api
-
 COPY apps/api/src ./src
+
+RUN poetry install --only main,api
 
 RUN mkdir -p /app/src/app/infra/storage/output && \
     chown -R appuser:appuser /app
@@ -73,9 +73,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN poetry install --no-root --only main,worker
-
 COPY apps/api/src ./src
+
+RUN poetry install --only main,worker
 
 RUN python -m playwright install chromium && \
     chown -R appuser:appuser /app /ms-playwright
@@ -85,9 +85,9 @@ CMD ["poetry", "run", "start-worker"]
 
 FROM base AS beat
 
-RUN poetry install --no-root --only main
-
 COPY apps/api/src ./src
+
+RUN poetry install --only main
 
 RUN chown -R appuser:appuser /app
 
